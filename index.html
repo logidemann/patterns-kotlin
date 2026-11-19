@@ -84,6 +84,17 @@ a{color:var(--accent)}
 .nav{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:16px}
 .empty{color:var(--muted)}
 .note{font-size:.88rem;color:var(--muted)}
+/* Éditeur exécutable (Kotlin Playground) */
+.kp{display:flex;flex-direction:column;gap:8px;min-width:0}
+.kp .executable-fragment-wrapper{margin:0 0 20px;max-width:100%}
+.kp .executable-fragment{border-radius:10px;overflow:hidden;border-color:var(--line)}
+.kp .CodeMirror{font-family:var(--mono);font-size:.82rem;line-height:1.55}
+.kp .CodeMirror pre{background:transparent;border-radius:0;padding:0 4px;overflow:visible;font-family:inherit;font-size:inherit;line-height:inherit !important}
+.kp .CodeMirror-lines{padding:10px 0}
+.kp .output-wrapper,.kp .js-code-output-executor{font-family:var(--mono);font-size:.82rem}
+.kp .output-wrapper pre,.kp .js-code-output-executor pre{background:transparent;padding:0;border-radius:0}
+.run{display:inline-flex;align-items:center;gap:8px}
+.run::before{content:"";border-style:solid;border-width:6px 0 6px 10px;border-color:transparent transparent transparent currentColor}
 @media (prefers-reduced-motion:no-preference){.tog,.chip,.opt{transition:background .15s,border-color .15s}}
 </style>
 </head>
@@ -1483,6 +1494,55 @@ function codeBlock(src){
   return pre;
 }
 
+
+/* ---------- éditeur exécutable (Kotlin Playground) ----------
+   kpState : "loading" tant que le script arrive, "ready" quand il est là, "failed" s'il est injoignable.
+   Sans le script, on retombe sur l'affichage simple (bloc de code / zone de texte). */
+let kpState = "loading";
+let mounts = [];                                   // éditeurs à créer une fois la fiche dans la page
+function flushMounts(){ const m = mounts; mounts = []; m.forEach(fn=>{ try{ fn(); }catch(e){} }); }
+function runner(src, o){
+  o = o || {};
+  let cur = src, inst = null, ta = null;
+  const wrap = el("div", {class:"kp"});
+  const changed = c=>{ if(c === cur) return; cur = c; if(o.onChange) o.onChange(c); };
+  const api = {node:wrap, get:()=>cur, run:()=>{ const b = wrap.querySelector(".run-button"); if(b) b.click(); else if(inst) inst.execute(); }, live:false};
+  if(kpState === "ready" && window.KotlinPlayground){
+    api.live = true;
+    const code = el("code", {theme:"darcula", lines:"true", "match-brackets":"true",
+      "data-autocomplete":"true", "highlight-on-fly":"true", "none-markers":"true"});
+    code.textContent = src;
+    wrap.append(code);
+    mounts.push(()=>{
+      window.KotlinPlayground(code, {getInstance:i=>{ inst = i; }, onChange:changed});
+      let tries = 0;                               // l'éditeur se construit juste après : on s'y branche dès qu'il existe
+      (function hook(){                            // écoute directe : le brouillon est enregistré à chaque frappe
+        const cm = wrap.querySelector(".CodeMirror");
+        if(cm && cm.CodeMirror) cm.CodeMirror.on("change", c=>changed(c.getValue()));
+        else if(tries++ < 200) setTimeout(hook, 50);
+      })();
+    });
+  }else if(o.editable){
+    ta = el("textarea", {spellcheck:"false", autocapitalize:"off", autocomplete:"off", "aria-label":"Ton code Kotlin"});
+    ta.value = src;
+    ta.addEventListener("input", ()=>{ cur = ta.value; if(o.onChange) o.onChange(cur); });
+    wrap.append(ta);
+  }else{
+    wrap.append(codeBlock(src));
+  }
+  api.select = ()=>{ if(ta) ta.select(); };
+  return api;
+}
+function kpNote(){
+  if(kpState === "ready") return el("p", {class:"note"}, "Clique sur Exécuter (ou sur la flèche verte) : le résultat s'affiche sous le code. Il faut être connecté à Internet.");
+  if(kpState === "loading") return el("p", {class:"note"}, "Chargement de l'éditeur exécutable…");
+  return el("p", {class:"note"}, "L'éditeur exécutable n'a pas pu se charger (pas de connexion ?). En attendant, copie le code et colle-le sur ",
+    el("a", {href:"https://play.kotlinlang.org/", target:"_blank", rel:"noopener"}, "play.kotlinlang.org"), ".");
+}
+function runBtn(r, label){
+  return r.live ? el("button", {class:"btn run", onclick:()=>r.run()}, label || "Exécuter") : null;
+}
+
 /* ---------- réglages ---------- */
 function renderConfig(){
   const fams = document.getElementById("fams"); fams.textContent = "";
@@ -1570,66 +1630,84 @@ function renderLesson(){
       el("div", {class:"kv"}, el("b", null, "Le problème"), el("p", null, p.p)),
       el("div", {class:"kv"}, el("b", null, "L'idée"), el("p", null, p.s)),
       el("p", {class:"tip"}, "En Kotlin : " + p.k),
-      codeBlock(p.c)));
+      ...(()=>{
+        const r = runner(p.c);
+        return [r.node, r.live ? el("div", {class:"row"}, runBtn(r, "Exécuter l'exemple")) : null,
+          r.live ? el("p", {class:"note"}, "Tu peux modifier l'exemple pour essayer : il revient à l'original quand tu changes de fiche.") : kpNote()];
+      })()));
   }
 
   if(S.parts.includes("qcm")){
-    const sec = el("section", {class:"sec"}, el("h3", null, "QCM"));
-    p.q.forEach((q, qi)=>{
-      const ans = pr.q[qi], done = ans !== undefined;
-      const wrap = el("div", {class:"q"}, el("p", null, (qi+1) + ". " + q.q));
-      q.o.forEach((o, oi)=>{
-        let cls = "opt";
-        if(done && oi===q.a) cls += " ok"; else if(done && oi===ans) cls += " ko";
-        wrap.append(el("button", {class:cls, disabled:done, onclick:()=>{ pr.q[qi]=oi; save(); renderToc(); renderLesson(); }}, o));
+    const sec = el("section", {class:"sec"});
+    const drawQcm = ()=>{
+      sec.textContent = ""; sec.append(el("h3", null, "QCM"));
+      p.q.forEach((q, qi)=>{
+        const ans = pr.q[qi], done = ans !== undefined;
+        const wrap = el("div", {class:"q"}, el("p", null, (qi+1) + ". " + q.q));
+        q.o.forEach((o, oi)=>{
+          let cls = "opt";
+          if(done && oi===q.a) cls += " ok"; else if(done && oi===ans) cls += " ko";
+          wrap.append(el("button", {class:cls, disabled:done, onclick:()=>{ pr.q[qi]=oi; save(); renderToc(); drawQcm(); }}, o));
+        });
+        if(done) wrap.append(el("p", {class:"fb", role:"status"}, (ans===q.a ? "Bonne réponse. " : "Raté. ") + q.e));
+        sec.append(wrap);
       });
-      if(done) wrap.append(el("p", {class:"fb"}, (ans===q.a ? "Bonne réponse. " : "Raté. ") + q.e));
-      sec.append(wrap);
-    });
-    if(Object.keys(pr.q).length) sec.append(el("div", null,
-      el("button", {class:"btn ghost", onclick:()=>{ pr.q={}; save(); renderToc(); renderLesson(); }}, "Refaire le QCM")));
+      if(Object.keys(pr.q).length) sec.append(el("div", null,
+        el("button", {class:"btn ghost", onclick:()=>{ pr.q={}; save(); renderToc(); drawQcm(); }}, "Refaire le QCM")));
+    };
+    drawQcm();
     box.append(sec);
   }
 
   if(S.parts.includes("exo")){
-    const ta = el("textarea", {id:"code-"+p.id, spellcheck:"false", autocapitalize:"off", autocomplete:"off", "aria-label":"Ton code Kotlin"});
-    ta.value = pr.d != null ? pr.d : p.x.d;
-    ta.addEventListener("input", ()=>{ pr.d = ta.value; save(); });
+    const holder = el("div"), runRow = el("div", {class:"row"});
+    let ed;
+    const mountEd = ()=>{
+      ed = runner(pr.d != null ? pr.d : p.x.d, {editable:true, onChange:c=>{ pr.d = c; save(); }});
+      holder.textContent = ""; holder.append(ed.node);
+      runRow.textContent = "";
+      runRow.append(runBtn(ed), copyBtn,
+        el("button", {class:"btn ghost", onclick:()=>{ pr.d=null; save(); mountEd(); flushMounts(); }}, "Réinitialiser"),
+        showBtn);
+    };
     const copyBtn = el("button", {class:"btn ghost", onclick:async()=>{
-      try{ await navigator.clipboard.writeText(ta.value); copyBtn.textContent = "Copié"; }
-      catch(e){ ta.select(); copyBtn.textContent = "Sélectionné, copie à la main"; }
+      try{ await navigator.clipboard.writeText(ed.get()); copyBtn.textContent = "Copié"; }
+      catch(e){ ed.select(); copyBtn.textContent = "Copie impossible, fais-le à la main"; }
       setTimeout(()=>copyBtn.textContent="Copier mon code", 1800);
     }}, "Copier mon code");
+    const solCode = el("div");
     const sol = el("div", {style:"display:none;flex-direction:column;gap:10px"},
-      codeBlock(p.x.s),
+      solCode,
       el("p", {class:"note"}, "Compare avec ton code. Plusieurs solutions sont valables."),
       el("div", {class:"row"},
         el("button", {class:"btn", onclick:()=>{ pr.x="ok"; save(); renderToc(); mark(); }}, "J'ai réussi"),
         el("button", {class:"btn ghost", onclick:()=>{ pr.x="ko"; save(); renderToc(); mark(); }}, "À revoir")));
-    const verdict = el("p", {class:"fb"});
+    const verdict = el("p", {class:"fb", role:"status"});
     const mark = ()=>{ verdict.textContent = pr.x==="ok" ? "Marqué comme réussi." : pr.x==="ko" ? "Marqué à revoir." : ""; };
     mark();
     const showBtn = el("button", {class:"btn ghost", onclick:()=>{
       const open = sol.style.display === "none";
       sol.style.display = open ? "flex" : "none";
       showBtn.textContent = open ? "Masquer la solution" : "Voir la solution";
+      if(open && !solCode.firstChild){                          // la solution est exécutable elle aussi
+        const r = runner(p.x.s);
+        solCode.append(r.node);
+        if(r.live) solCode.append(el("div", {class:"row", style:"margin-top:8px"}, runBtn(r, "Exécuter la solution")));
+        flushMounts();
+      }
     }}, "Voir la solution");
+    mountEd();
     box.append(el("section", {class:"sec"},
       el("h3", null, "Exercice"),
       el("p", null, p.x.t),
-      ta,
-      el("div", {class:"row"},
-        copyBtn,
-        el("button", {class:"btn ghost", onclick:()=>{ pr.d=null; ta.value=p.x.d; save(); }}, "Réinitialiser"),
-        showBtn),
-      el("p", {class:"note"}, "Pour exécuter ton code : copie-le, puis colle-le sur ",
-        el("a", {href:"https://play.kotlinlang.org/", target:"_blank", rel:"noopener"}, "play.kotlinlang.org"), "."),
+      holder, runRow, kpNote(),
       sol, verdict));
   }
 
   box.append(el("nav", {class:"nav"},
     el("button", {class:"btn ghost", disabled:idx===0, onclick:()=>go(list[idx-1].id, true)}, "← Précédent"),
     el("button", {class:"btn", disabled:idx===list.length-1, onclick:()=>go(list[idx+1].id, true)}, "Suivant →")));
+  flushMounts();
 }
 
 /* ---------- navigation ---------- */
@@ -1655,6 +1733,16 @@ function fromHash(){
 addEventListener("hashchange", ()=>{ fromHash(); update(); });
 if(!byId(S.cur)) S.cur = P[0].id;
 fromHash(); update();
+
+/* Charge l'éditeur exécutable sans bloquer l'affichage de la page, puis redessine la fiche. */
+(function(){
+  const sc = document.createElement("script");
+  sc.src = "https://unpkg.com/kotlin-playground@1";
+  sc.async = true;
+  sc.onload = ()=>{ kpState = window.KotlinPlayground ? "ready" : "failed"; renderLesson(); };
+  sc.onerror = ()=>{ kpState = "failed"; renderLesson(); };
+  document.head.append(sc);
+})();
 </script>
 </body>
 </html>
