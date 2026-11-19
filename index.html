@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier Design Patterns Kotlin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout : une colonne de travail. Réglages en haut, sommaire, puis la fiche du pattern en cours. */
+:root{
+  --bg:#f3f4f8; --surface:#ffffff; --ink:#1b1d2a; --muted:#5d6278; --line:#d9dce8;
+  --accent:#6a3df0; --accent-ink:#ffffff; --code-bg:#1e2030; --code-ink:#e4e6f3;
+  --crea:#0b8a7a; --struct:#b76a00; --comp:#c2267a;
+  --good:#1a8a4a; --bad:#c43c3c;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13141c; --surface:#1c1e2a; --ink:#eceef7; --muted:#a0a5bd; --line:#30344a;
+    --accent:#a78bff; --accent-ink:#17102f; --code-bg:#0e0f17; --code-ink:#e4e6f3;
+    --crea:#3fd0bd; --struct:#f0a93c; --comp:#ff7ab8; --good:#4fd08a; --bad:#ff8080;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13141c; --surface:#1c1e2a; --ink:#eceef7; --muted:#a0a5bd; --line:#30344a;
+  --accent:#a78bff; --accent-ink:#17102f; --code-bg:#0e0f17; --code-ink:#e4e6f3;
+  --crea:#3fd0bd; --struct:#f0a93c; --comp:#ff7ab8; --good:#4fd08a; --bad:#ff8080;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+main{max-width:780px;margin:0 auto;padding:20px 16px 64px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.7rem}
+h2{font-size:1.5rem}
+h3{font-size:1.05rem;letter-spacing:.01em}
+p{margin:0}
+.sub{color:var(--muted);font-size:.95rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tog{background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:500;font-size:.93rem}
+.tog[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip{background:transparent;border:1.5px solid var(--line);border-radius:8px;padding:5px 10px;font-size:.86rem;color:var(--muted)}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:var(--fam);box-shadow:inset 3px 0 0 var(--fam)}
+.famgroup{display:flex;flex-direction:column;gap:6px}
+.famname{font-size:.82rem;font-weight:600;color:var(--fam)}
+.f-crea{--fam:var(--crea)} .f-struct{--fam:var(--struct)} .f-comp{--fam:var(--comp)}
+details>summary{cursor:pointer;font-weight:500;color:var(--muted);font-size:.93rem}
+details[open]>summary{margin-bottom:10px}
+.toc{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.toc button{width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:8px;font-size:.93rem}
+.toc button[aria-current="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--fam);flex:none}
+.toc .st{margin-left:auto;font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font-size:.76rem;font-weight:600;color:var(--fam);border:1.5px solid var(--fam);border-radius:999px;padding:2px 10px}
+.lesson{gap:20px}
+.lesson header{display:flex;flex-direction:column;gap:8px}
+.sec{display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:16px}
+.sec p{max-width:65ch}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv b{font-size:.85rem;color:var(--muted);font-weight:600}
+.tip{border-left:3px solid var(--accent);padding:6px 12px;background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:0 8px 8px 0;font-size:.95rem}
+pre{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:14px;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.55;tab-size:4}
+.kw{color:#c3a6ff}.str{color:#a5e3a0}.com{color:#8088a8;font-style:italic}.num{color:#ffb86c}
+.q{display:flex;flex-direction:column;gap:8px}
+.q .opt{text-align:left;background:transparent;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px}
+.q .opt.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,transparent)}
+.q .opt.ko{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.q .opt:disabled{cursor:default;opacity:1;color:inherit}
+.fb{font-size:.92rem;color:var(--muted)}
+textarea{width:100%;min-height:220px;resize:vertical;background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:var(--mono);font-size:.82rem;line-height:1.5;tab-size:4}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:9px 16px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+a{color:var(--accent)}
+.nav{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:16px}
+.empty{color:var(--muted)}
+.note{font-size:.88rem;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.tog,.chip,.opt{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>Atelier Design Patterns Kotlin</h1>
+    <p class="sub">Choisis tes patterns et ce que tu veux travailler. La fiche s'adapte tout de suite.</p>
+  </div>
+
+  <section class="panel" aria-label="Réglages">
+    <div>
+      <div class="label">Familles</div>
+      <div class="row" id="fams" style="margin-top:8px"></div>
+    </div>
+    <details id="picker">
+      <summary id="pickerSum">Choisir pattern par pattern</summary>
+      <div id="chips" style="display:flex;flex-direction:column;gap:12px"></div>
+    </details>
+    <div>
+      <div class="label">Contenu</div>
+      <div class="row" id="parts" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Sommaire">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <h3>Sommaire</h3>
+      <span class="sub" id="tocCount"></span>
+    </div>
+    <ol class="toc" id="toc"></ol>
+  </section>
+
+  <article class="panel lesson" id="lesson"></article>
+</main>
+
+<script>
+const FAMS = {crea:"Création", struct:"Structure", comp:"Comportement"};
+const P = [
+/* ---------- CRÉATION ---------- */
+{id:"factory-method", n:"Fabrique", en:"Factory Method", f:"crea",
+ i:"Déclare une méthode de création dans une classe mère et laisse les sous-classes décider quel objet concret fabriquer.",
+ p:"Ton code de logistique crée des Camion partout. Le jour où il faut gérer des Bateau, tu dois retoucher chaque endroit qui appelle Camion().",
+ s:"Les appels directs au constructeur sont remplacés par une méthode fabrique. Le reste du code ne connaît que l'interface Transport.",
+ k:"Pour une fabrique simple, Kotlin se contente souvent d'une fonction dans un companion object ou d'une fonction de haut niveau.",
+ c:`interface Transport { fun livrer(): String }
+class Camion : Transport { override fun livrer() = "Livraison par la route" }
+class Bateau : Transport { override fun livrer() = "Livraison par la mer" }
+
+abstract class Logistique {
+    abstract fun creerTransport(): Transport   // la méthode fabrique
+    fun planifier() = "Plan : " + creerTransport().livrer()
+}
+class LogistiqueRoutiere : Logistique() { override fun creerTransport() = Camion() }
+class LogistiqueMaritime : Logistique() { override fun creerTransport() = Bateau() }
+
+fun main() {
+    val logistique: Logistique = LogistiqueMaritime()
+    println(logistique.planifier())
+}`,
+ q:[{q:"Qui décide de la classe concrète à instancier ?",o:["Le code client, avec un when","La sous-classe du créateur","L'interface du produit"],a:1,e:"Chaque sous-classe du créateur redéfinit la méthode fabrique et renvoie son propre produit."},
+    {q:"Quel est le gain principal ?",o:["On ajoute un nouveau produit sans modifier le code qui l'utilise","Les objets sont créés plus vite","Il n'existe qu'une seule instance du produit"],a:0,e:"Le code client dépend d'une interface, donc un nouveau produit n'oblige pas à le réécrire."}],
+ x:{t:"Crée une interface Bouton avec afficher(): String, deux boutons (BoutonWindows, BoutonWeb) et une classe abstraite Dialogue qui possède la méthode fabrique creerBouton() et une méthode rendre() qui utilise le bouton.",
+    d:`interface Bouton { fun afficher(): String }
+
+// TODO : BoutonWindows et BoutonWeb
+
+abstract class Dialogue {
+    // TODO : méthode fabrique creerBouton()
+    // TODO : rendre() qui renvoie "Dialogue avec " + le bouton
+}
+
+// TODO : DialogueWindows et DialogueWeb
+
+fun main() {
+    // val d: Dialogue = DialogueWeb()
+    // println(d.rendre())
+}`,
+    s:`interface Bouton { fun afficher(): String }
+class BoutonWindows : Bouton { override fun afficher() = "bouton Windows" }
+class BoutonWeb : Bouton { override fun afficher() = "bouton HTML" }
+
+abstract class Dialogue {
+    abstract fun creerBouton(): Bouton
+    fun rendre() = "Dialogue avec " + creerBouton().afficher()
+}
+class DialogueWindows : Dialogue() { override fun creerBouton() = BoutonWindows() }
+class DialogueWeb : Dialogue() { override fun creerBouton() = BoutonWeb() }
+
+fun main() {
+    val d: Dialogue = DialogueWeb()
+    println(d.rendre())
+}`}},
+
+{id:"abstract-factory", n:"Fabrique abstraite", en:"Abstract Factory", f:"crea",
+ i:"Crée des familles d'objets assortis sans préciser leurs classes concrètes.",
+ p:"Ton interface a un thème clair et un thème sombre. Si chaque écran choisit ses composants à la main, tu finis avec un bouton clair à côté d'une case sombre.",
+ s:"Une fabrique par famille. Chaque fabrique sait créer tous les produits de sa famille, donc ils vont forcément ensemble.",
+ k:"Les fabriques concrètes n'ont pas d'état : un object Kotlin suffit pour chacune.",
+ c:`interface Bouton { fun rendu(): String }
+interface Case { fun rendu(): String }
+
+class BoutonClair : Bouton { override fun rendu() = "Bouton clair" }
+class CaseClaire : Case { override fun rendu() = "Case claire" }
+class BoutonSombre : Bouton { override fun rendu() = "Bouton sombre" }
+class CaseSombre : Case { override fun rendu() = "Case sombre" }
+
+interface FabriqueUI {
+    fun bouton(): Bouton
+    fun case(): Case
+}
+object ThemeClair : FabriqueUI {
+    override fun bouton() = BoutonClair()
+    override fun case() = CaseClaire()
+}
+object ThemeSombre : FabriqueUI {
+    override fun bouton() = BoutonSombre()
+    override fun case() = CaseSombre()
+}
+
+fun ecran(f: FabriqueUI) = f.bouton().rendu() + " + " + f.case().rendu()
+
+fun main() = println(ecran(ThemeSombre))`,
+ q:[{q:"Quelle différence avec la Fabrique simple ?",o:["Elle crée plusieurs produits liés, pas un seul","Elle interdit l'héritage","Elle ne crée qu'une seule instance"],a:0,e:"La fabrique abstraite regroupe plusieurs méthodes de création pour une famille de produits cohérents."},
+    {q:"Que faut-il faire pour ajouter un thème « contraste élevé » ?",o:["Modifier la fonction ecran()","Ajouter une nouvelle fabrique et ses produits","Ajouter un when dans chaque produit"],a:1,e:"On ajoute une fabrique et ses produits. Le code client ne change pas."}],
+ x:{t:"Un magasin vend des meubles Modernes et Victoriens. Crée les interfaces Chaise et Table (méthode style(): String), les quatre classes concrètes, puis une FabriqueMeubles avec deux implémentations. Écris une fonction salon(f) qui décrit une chaise et une table assorties.",
+    d:`interface Chaise { fun style(): String }
+interface Table { fun style(): String }
+
+// TODO : ChaiseModerne, TableModerne, ChaiseVictorienne, TableVictorienne
+
+// TODO : interface FabriqueMeubles + deux fabriques
+
+// TODO : fun salon(f: FabriqueMeubles): String
+
+fun main() {
+    // println(salon(Victorien))
+}`,
+    s:`interface Chaise { fun style(): String }
+interface Table { fun style(): String }
+
+class ChaiseModerne : Chaise { override fun style() = "chaise moderne" }
+class TableModerne : Table { override fun style() = "table moderne" }
+class ChaiseVictorienne : Chaise { override fun style() = "chaise victorienne" }
+class TableVictorienne : Table { override fun style() = "table victorienne" }
+
+interface FabriqueMeubles {
+    fun chaise(): Chaise
+    fun table(): Table
+}
+object Moderne : FabriqueMeubles {
+    override fun chaise() = ChaiseModerne()
+    override fun table() = TableModerne()
+}
+object Victorien : FabriqueMeubles {
+    override fun chaise() = ChaiseVictorienne()
+    override fun table() = TableVictorienne()
+}
+
+fun salon(f: FabriqueMeubles) = f.chaise().style() + " et " + f.table().style()
+
+fun main() = println(salon(Victorien))`}},
+
+{id:"builder", n:"Monteur", en:"Builder", f:"crea",
+ i:"Construit un objet complexe étape par étape, au lieu d'un constructeur avec dix paramètres.",
+ p:"Une Pizza a une pâte, des garnitures, du fromage ou non, une cuisson. Un seul constructeur devient illisible : Pizza(\"fine\", true, false, null, 3).",
+ s:"Un objet Builder accumule les choix avec des méthodes nommées, puis build() fabrique l'objet final, souvent immuable.",
+ k:"Les arguments nommés et les valeurs par défaut de Kotlin remplacent le Builder dans beaucoup de cas. Il reste utile quand la construction se fait en plusieurs étapes ou avec des validations.",
+ c:`class Pizza private constructor(
+    val pate: String, val garnitures: List<String>, val fromage: Boolean
+) {
+    class Builder {
+        private var pate = "classique"
+        private val garnitures = mutableListOf<String>()
+        private var fromage = true
+
+        fun pate(p: String) = apply { pate = p }
+        fun ajouter(g: String) = apply { garnitures += g }
+        fun sansFromage() = apply { fromage = false }
+        fun build() = Pizza(pate, garnitures.toList(), fromage)
+    }
+}
+
+fun main() {
+    val pizza = Pizza.Builder().pate("fine").ajouter("champignons").ajouter("olives").build()
+    println(pizza.pate + " : " + pizza.garnitures)
+}`,
+ q:[{q:"À quoi sert apply { } dans les méthodes du Builder ?",o:["À renvoyer le Builder lui-même pour enchaîner les appels","À créer une copie de la pizza","À rendre la méthode privée"],a:0,e:"apply exécute le bloc puis renvoie l'objet, ce qui permet d'écrire .pate(...).ajouter(...).build()."},
+    {q:"Dans quel cas un Builder est-il inutile en Kotlin ?",o:["Quand l'objet a beaucoup d'options","Quand des paramètres nommés avec valeurs par défaut suffisent","Quand l'objet est immuable"],a:1,e:"Pizza(pate = \"fine\", fromage = false) est déjà lisible. Le Builder sert quand la construction est plus riche."}],
+ x:{t:"Écris un Builder pour une Requete HTTP : url (obligatoire, passée au Builder), methode (\"GET\" par défaut), en-têtes (une map) et corps (optionnel). build() doit refuser un corps sur une requête GET avec require().",
+    d:`class Requete(
+    val url: String, val methode: String,
+    val entetes: Map<String, String>, val corps: String?
+)
+
+class RequeteBuilder(private val url: String) {
+    // TODO : champs avec valeurs par défaut
+    // TODO : methode(), entete(), corps()
+    // TODO : build() avec la vérification
+}
+
+fun main() {
+    // val r = RequeteBuilder("https://exemple.fr").methode("POST").corps("{}").build()
+    // println(r.methode + " " + r.url)
+}`,
+    s:`class Requete(
+    val url: String, val methode: String,
+    val entetes: Map<String, String>, val corps: String?
+)
+
+class RequeteBuilder(private val url: String) {
+    private var methode = "GET"
+    private val entetes = mutableMapOf<String, String>()
+    private var corps: String? = null
+
+    fun methode(m: String) = apply { methode = m }
+    fun entete(cle: String, valeur: String) = apply { entetes[cle] = valeur }
+    fun corps(c: String) = apply { corps = c }
+
+    fun build(): Requete {
+        require(!(methode == "GET" && corps != null)) { "Une requête GET n'a pas de corps" }
+        return Requete(url, methode, entetes.toMap(), corps)
+    }
+}
+
+fun main() {
+    val r = RequeteBuilder("https://exemple.fr").methode("POST").corps("{}").build()
+    println(r.methode + " " + r.url)
+}`}},
+
+{id:"prototype", n:"Prototype", en:"Prototype", f:"crea",
+ i:"Crée de nouveaux objets en copiant un objet existant, sans dépendre de sa classe.",
+ p:"Tu veux dupliquer un monstre déjà configuré. Recopier ses champs un par un depuis l'extérieur est fragile, et certains champs sont privés.",
+ s:"L'objet sait se cloner lui-même. Le code client appelle simplement cloner().",
+ k:"Les data class offrent copy() gratuitement. Attention : c'est une copie superficielle, les objets internes sont partagés.",
+ c:`data class Stats(var pv: Int, var attaque: Int)
+
+data class Monstre(val nom: String, val stats: Stats) {
+    // copie profonde : les stats sont copiées aussi
+    fun cloner() = copy(stats = stats.copy())
+}
+
+fun main() {
+    val modele = Monstre("Gobelin", Stats(pv = 30, attaque = 5))
+    val clone = modele.cloner()
+    clone.stats.pv = 0
+    println(modele.stats.pv)   // 30 : le modèle n'est pas touché
+}`,
+ q:[{q:"Que fait copy() sur une data class qui contient une liste mutable ?",o:["Elle copie aussi la liste","Elle partage la même liste entre l'original et la copie","Elle vide la liste"],a:1,e:"copy() est superficielle : les références internes sont partagées, sauf si tu les copies toi-même."},
+    {q:"Quand le Prototype est-il intéressant ?",o:["Quand créer l'objet de zéro est coûteux ou compliqué","Quand il ne faut qu'une seule instance","Quand on veut cacher un sous-système"],a:0,e:"Copier un objet déjà configuré évite de refaire toute la configuration."}],
+ x:{t:"Crée une interface Forme avec cloner(): Forme et description(): String. Implémente Cercle(rayon) et Rectangle(largeur, hauteur). Écris ensuite une fonction dupliquer(formes) qui renvoie une liste de clones sans connaître les classes concrètes.",
+    d:`interface Forme {
+    fun cloner(): Forme
+    fun description(): String
+}
+
+// TODO : Cercle et Rectangle
+
+// TODO : fun dupliquer(formes: List<Forme>): List<Forme>
+
+fun main() {
+    // val copies = dupliquer(listOf(Cercle(2.0), Rectangle(3.0, 4.0)))
+    // copies.forEach { println(it.description()) }
+}`,
+    s:`interface Forme {
+    fun cloner(): Forme
+    fun description(): String
+}
+
+data class Cercle(val rayon: Double) : Forme {
+    override fun cloner() = copy()
+    override fun description() = "Cercle de rayon " + rayon
+}
+data class Rectangle(val largeur: Double, val hauteur: Double) : Forme {
+    override fun cloner() = copy()
+    override fun description() = "Rectangle " + largeur + " x " + hauteur
+}
+
+fun dupliquer(formes: List<Forme>) = formes.map { it.cloner() }
+
+fun main() {
+    val copies = dupliquer(listOf(Cercle(2.0), Rectangle(3.0, 4.0)))
+    copies.forEach { println(it.description()) }
+}`}},
+
+{id:"singleton", n:"Singleton", en:"Singleton", f:"crea",
+ i:"Garantit qu'une classe n'a qu'une seule instance et fournit un accès global à celle-ci.",
+ p:"Toute l'application doit lire la même configuration. Si chaque écran crée la sienne, les réglages divergent.",
+ s:"La classe contrôle sa propre création et expose toujours la même instance.",
+ k:"Le mot-clé object crée un singleton, initialisé à la première utilisation et sûr entre threads.",
+ c:`object Config {
+    private val valeurs = mutableMapOf("langue" to "fr")
+
+    fun lire(cle: String) = valeurs[cle]
+    fun ecrire(cle: String, valeur: String) { valeurs[cle] = valeur }
+}
+
+fun main() {
+    Config.ecrire("theme", "sombre")
+    println(Config.lire("theme"))   // même instance partout
+}`,
+ q:[{q:"Comment déclare-t-on un singleton en Kotlin ?",o:["class Config private constructor()","object Config","static class Config"],a:1,e:"object déclare la classe et son unique instance en une seule fois."},
+    {q:"Quel reproche fait-on souvent au Singleton ?",o:["Il consomme trop de mémoire","Il crée un état global qui complique les tests","Il empêche l'héritage d'interfaces"],a:1,e:"Un état global partagé rend le code plus couplé et les tests moins isolés."}],
+ x:{t:"Crée un singleton Journal qui garde les messages en mémoire : log(message) ajoute une ligne numérotée, historique() renvoie une copie de la liste, vider() efface tout.",
+    d:`// TODO : object Journal
+
+fun main() {
+    // Journal.log("Démarrage")
+    // Journal.log("Connexion")
+    // println(Journal.historique())
+}`,
+    s:`object Journal {
+    private val lignes = mutableListOf<String>()
+
+    fun log(message: String) {
+        val numero = lignes.size + 1
+        lignes += "#" + numero + " " + message
+    }
+    fun historique(): List<String> = lignes.toList()
+    fun vider() = lignes.clear()
+}
+
+fun main() {
+    Journal.log("Démarrage")
+    Journal.log("Connexion")
+    println(Journal.historique())
+}`}},
+
+/* ---------- STRUCTURE ---------- */
+{id:"adapter", n:"Adaptateur", en:"Adapter", f:"struct",
+ i:"Fait collaborer deux classes dont les interfaces sont incompatibles.",
+ p:"Ton application attend des températures en Celsius. Le capteur que tu as acheté ne sait répondre qu'en Fahrenheit, et tu ne peux pas modifier son code.",
+ s:"Une classe intermédiaire implémente l'interface attendue et traduit chaque appel vers l'objet existant.",
+ k:"Pour une traduction légère, une fonction d'extension peut suffire. L'adaptateur reste nécessaire quand il faut respecter une interface.",
+ c:`interface Thermometre { fun celsius(): Double }
+
+// Classe existante, qu'on ne peut pas modifier
+class CapteurUS { fun fahrenheit() = 98.6 }
+
+class AdaptateurCapteur(private val capteur: CapteurUS) : Thermometre {
+    override fun celsius() = (capteur.fahrenheit() - 32) * 5 / 9
+}
+
+fun afficher(t: Thermometre) = println("Il fait " + t.celsius() + " °C")
+
+fun main() = afficher(AdaptateurCapteur(CapteurUS()))`,
+ q:[{q:"Que modifie-t-on pour brancher la classe incompatible ?",o:["La classe existante","Le code client","Rien des deux : on ajoute un adaptateur"],a:2,e:"L'adaptateur s'intercale. Ni le client ni la classe existante ne changent."},
+    {q:"Quelle est la différence avec le Décorateur ?",o:["L'adaptateur change l'interface, le décorateur la conserve","L'adaptateur ajoute des fonctionnalités","Aucune"],a:0,e:"L'adaptateur traduit une interface vers une autre. Le décorateur garde la même et ajoute du comportement."}],
+ x:{t:"Ton application utilise l'interface Paiement avec payer(euros: Double): String. Une ancienne bibliothèque, AncienTerminal, propose seulement encaisser(centimes: Int): Boolean. Écris l'adaptateur.",
+    d:`interface Paiement { fun payer(euros: Double): String }
+
+class AncienTerminal {
+    fun encaisser(centimes: Int): Boolean = centimes > 0
+}
+
+// TODO : class AdaptateurTerminal
+
+fun main() {
+    // val p: Paiement = AdaptateurTerminal(AncienTerminal())
+    // println(p.payer(12.50))
+}`,
+    s:`interface Paiement { fun payer(euros: Double): String }
+
+class AncienTerminal {
+    fun encaisser(centimes: Int): Boolean = centimes > 0
+}
+
+class AdaptateurTerminal(private val terminal: AncienTerminal) : Paiement {
+    override fun payer(euros: Double): String {
+        val centimes = Math.round(euros * 100).toInt()
+        return if (terminal.encaisser(centimes)) "Paiement accepté" else "Paiement refusé"
+    }
+}
+
+fun main() {
+    val p: Paiement = AdaptateurTerminal(AncienTerminal())
+    println(p.payer(12.50))
+}`}},
+
+{id:"bridge", n:"Pont", en:"Bridge", f:"struct",
+ i:"Sépare une abstraction de son implémentation pour que les deux évoluent chacune de leur côté.",
+ p:"Tu as des télécommandes (simple, avancée) et des appareils (télé, radio). Avec l'héritage seul, il faut une classe par combinaison : TelecommandeAvanceeRadio, etc.",
+ s:"La télécommande contient une référence vers un Appareil au lieu d'en hériter. Deux hiérarchies indépendantes, reliées par composition.",
+ k:"Le pont est simplement une propriété du constructeur : class Telecommande(val appareil: Appareil).",
+ c:`interface Appareil {
+    val nom: String
+    var volume: Int
+}
+class Tele : Appareil { override val nom = "Télé"; override var volume = 10 }
+class Radio : Appareil { override val nom = "Radio"; override var volume = 5 }
+
+open class Telecommande(protected val appareil: Appareil) {
+    fun plusFort() { appareil.volume += 1 }
+    fun etat() = appareil.nom + " : volume " + appareil.volume
+}
+class TelecommandeAvancee(appareil: Appareil) : Telecommande(appareil) {
+    fun muet() { appareil.volume = 0 }
+}
+
+fun main() {
+    val t = TelecommandeAvancee(Radio())
+    t.plusFort(); println(t.etat())
+    t.muet(); println(t.etat())
+}`,
+ q:[{q:"Quel problème le Pont évite-t-il ?",o:["L'explosion du nombre de sous-classes","Les fuites de mémoire","Les appels réseau répétés"],a:0,e:"Deux axes de variation gérés par héritage donnent une classe par combinaison. Le pont les sépare."},
+    {q:"Par quoi les deux hiérarchies sont-elles reliées ?",o:["Par héritage multiple","Par composition : l'abstraction contient une implémentation","Par un singleton"],a:1,e:"L'abstraction garde une référence vers l'implémentation et lui délègue le travail."}],
+ x:{t:"Des messages (Message simple, MessageUrgent qui ajoute « URGENT : ») doivent partir par différents canaux (Email, Sms). Sépare les deux hiérarchies avec une interface Canal et une classe ouverte Message.",
+    d:`interface Canal { fun transmettre(texte: String): String }
+
+// TODO : Email et Sms
+
+// TODO : open class Message(canal) avec envoyer(texte)
+
+// TODO : MessageUrgent
+
+fun main() {
+    // println(MessageUrgent(Sms()).envoyer("Serveur en panne"))
+}`,
+    s:`interface Canal { fun transmettre(texte: String): String }
+class Email : Canal { override fun transmettre(texte: String) = "Email > " + texte }
+class Sms : Canal { override fun transmettre(texte: String) = "SMS > " + texte }
+
+open class Message(protected val canal: Canal) {
+    open fun envoyer(texte: String) = canal.transmettre(texte)
+}
+class MessageUrgent(canal: Canal) : Message(canal) {
+    override fun envoyer(texte: String) = canal.transmettre("URGENT : " + texte)
+}
+
+fun main() {
+    println(MessageUrgent(Sms()).envoyer("Serveur en panne"))
+}`}},
+
+{id:"composite", n:"Composite", en:"Composite", f:"struct",
+ i:"Organise des objets en arbre et traite de la même façon un élément seul ou un groupe d'éléments.",
+ p:"Pour calculer la taille d'un dossier, il faut additionner des fichiers et des sous-dossiers, eux-mêmes remplis de fichiers et de dossiers.",
+ s:"Fichier et Dossier partagent la même interface. Un dossier délègue à ses enfants, sans savoir s'ils sont simples ou composés.",
+ k:"sumOf, map et forEach rendent la délégation aux enfants très courte.",
+ c:`interface Element { fun taille(): Int }
+
+class Fichier(private val octets: Int) : Element {
+    override fun taille() = octets
+}
+class Dossier(private val enfants: List<Element>) : Element {
+    override fun taille() = enfants.sumOf { it.taille() }
+}
+
+fun main() {
+    val racine = Dossier(listOf(
+        Fichier(120),
+        Dossier(listOf(Fichier(30), Fichier(50)))
+    ))
+    println(racine.taille())   // 200
+}`,
+ q:[{q:"Quelle forme de données appelle un Composite ?",o:["Une file d'attente","Un arbre","Une table de hachage"],a:1,e:"Le Composite sert pour les structures où un tout contient des parties de même nature."},
+    {q:"Que voit le code client ?",o:["Une interface commune, que ce soit une feuille ou un groupe","Deux API différentes selon le cas","Uniquement les feuilles"],a:0,e:"Le client appelle la même méthode partout. La récursion se fait à l'intérieur."}],
+ x:{t:"Un restaurant vend des Plat (nom, prix) et des Formule qui regroupent des plats ou d'autres formules, avec une remise en pourcentage. Les deux implémentent Article avec prix(): Double.",
+    d:`interface Article { fun prix(): Double }
+
+// TODO : class Plat
+
+// TODO : class Formule(elements, remise en %)
+
+fun main() {
+    // val menu = Formule(listOf(Plat("Salade", 6.0), Plat("Pâtes", 12.0)), 10)
+    // println(menu.prix())   // 16.2
+}`,
+    s:`interface Article { fun prix(): Double }
+
+class Plat(val nom: String, private val tarif: Double) : Article {
+    override fun prix() = tarif
+}
+class Formule(private val elements: List<Article>, private val remise: Int) : Article {
+    override fun prix() = elements.sumOf { it.prix() } * (100 - remise) / 100
+}
+
+fun main() {
+    val menu = Formule(listOf(Plat("Salade", 6.0), Plat("Pâtes", 12.0)), 10)
+    println(menu.prix())   // 16.2
+}`}},
+
+{id:"decorator", n:"Décorateur", en:"Decorator", f:"struct",
+ i:"Ajoute des comportements à un objet en l'enveloppant dans un autre objet qui a la même interface.",
+ p:"Tu envoies des notifications par email. Certains veulent aussi un SMS, d'autres Slack, d'autres les deux. Une sous-classe par combinaison ne tient pas.",
+ s:"Chaque enveloppe ajoute son comportement puis délègue à l'objet enveloppé. Elles s'empilent dans l'ordre que tu veux.",
+ k:"La délégation avec by évite de réécrire les méthodes que le décorateur ne change pas : class Deco(n: Notifieur) : Notifieur by n.",
+ c:`interface Notifieur { fun envoyer(msg: String): List<String> }
+
+class Email : Notifieur {
+    override fun envoyer(msg: String) = listOf("Email : $msg")
+}
+class AvecSms(private val base: Notifieur) : Notifieur {
+    override fun envoyer(msg: String) = base.envoyer(msg) + "SMS : $msg"
+}
+class AvecSlack(private val base: Notifieur) : Notifieur {
+    override fun envoyer(msg: String) = base.envoyer(msg) + "Slack : $msg"
+}
+
+fun main() {
+    val n: Notifieur = AvecSlack(AvecSms(Email()))
+    n.envoyer("Sauvegarde terminée").forEach(::println)
+}`,
+ q:[{q:"Quelle interface a un décorateur ?",o:["La même que l'objet qu'il enveloppe","Une interface plus simple","Aucune"],a:0,e:"C'est ce qui permet de l'utiliser à la place de l'objet d'origine et d'empiler les décorateurs."},
+    {q:"Quel avantage par rapport à l'héritage ?",o:["Le code est plus rapide","On combine les comportements à l'exécution","On n'a plus besoin d'interface"],a:1,e:"Les enveloppes se combinent librement au moment de créer l'objet, sans classe par combinaison."}],
+ x:{t:"Une Boisson a description(): String et prix(): Double. Crée Cafe (2.0 €) puis deux décorateurs, AvecLait (+0.5) et AvecChantilly (+0.8), qui complètent la description et le prix.",
+    d:`interface Boisson {
+    fun description(): String
+    fun prix(): Double
+}
+
+// TODO : class Cafe
+
+// TODO : AvecLait et AvecChantilly
+
+fun main() {
+    // val b = AvecChantilly(AvecLait(Cafe()))
+    // println(b.description() + " = " + b.prix())
+}`,
+    s:`interface Boisson {
+    fun description(): String
+    fun prix(): Double
+}
+
+class Cafe : Boisson {
+    override fun description() = "Café"
+    override fun prix() = 2.0
+}
+class AvecLait(private val base: Boisson) : Boisson {
+    override fun description() = base.description() + ", lait"
+    override fun prix() = base.prix() + 0.5
+}
+class AvecChantilly(private val base: Boisson) : Boisson {
+    override fun description() = base.description() + ", chantilly"
+    override fun prix() = base.prix() + 0.8
+}
+
+fun main() {
+    val b = AvecChantilly(AvecLait(Cafe()))
+    println(b.description() + " = " + b.prix())
+}`}},
+
+{id:"facade", n:"Façade", en:"Facade", f:"struct",
+ i:"Offre une interface simple devant un ensemble de classes compliqué.",
+ p:"Pour regarder un film, il faut allumer le projecteur, régler l'ampli, lancer le lecteur, dans le bon ordre. Chaque écran de l'application répète cette séquence.",
+ s:"Une classe regroupe la séquence derrière une méthode claire. Le sous-système reste accessible pour les cas avancés.",
+ k:"Une façade est une classe ordinaire. Évite d'en faire un objet fourre-tout : une façade par usage.",
+ c:`class Projecteur { fun allumer() = "Projecteur allumé" }
+class Ampli { fun regler(volume: Int) = "Ampli à $volume" }
+class Lecteur { fun lire(film: String) = "Lecture de $film" }
+
+class HomeCinema(
+    private val projecteur: Projecteur = Projecteur(),
+    private val ampli: Ampli = Ampli(),
+    private val lecteur: Lecteur = Lecteur()
+) {
+    fun regarder(film: String) = listOf(
+        projecteur.allumer(), ampli.regler(7), lecteur.lire(film)
+    )
+}
+
+fun main() = HomeCinema().regarder("Le Voyage de Chihiro").forEach(::println)`,
+ q:[{q:"Que fait une Façade ?",o:["Elle remplace le sous-système","Elle simplifie l'accès au sous-système","Elle ajoute des fonctionnalités au sous-système"],a:1,e:"Elle n'ajoute rien : elle orchestre des classes existantes derrière une API plus simple."},
+    {q:"Le client peut-il encore utiliser les classes internes ?",o:["Oui, la façade ne les cache pas forcément","Non, jamais","Seulement par héritage"],a:0,e:"La façade est un raccourci pratique. Elle n'interdit pas l'accès direct."}],
+ x:{t:"Une commande en ligne passe par Stock.reserver(article), Banque.debiter(montant) et Livraison.planifier(article). Écris une façade Boutique avec commander(article, montant) qui renvoie les étapes, et s'arrête si le stock est vide.",
+    d:`class Stock { fun reserver(article: String) = article != "rupture" }
+class Banque { fun debiter(montant: Double) = "Débit de " + montant + " €" }
+class Livraison { fun planifier(article: String) = "Livraison de " + article + " prévue" }
+
+// TODO : class Boutique avec commander(article, montant): List<String>
+
+fun main() {
+    // Boutique().commander("clavier", 49.9).forEach(::println)
+}`,
+    s:`class Stock { fun reserver(article: String) = article != "rupture" }
+class Banque { fun debiter(montant: Double) = "Débit de " + montant + " €" }
+class Livraison { fun planifier(article: String) = "Livraison de " + article + " prévue" }
+
+class Boutique(
+    private val stock: Stock = Stock(),
+    private val banque: Banque = Banque(),
+    private val livraison: Livraison = Livraison()
+) {
+    fun commander(article: String, montant: Double): List<String> {
+        if (!stock.reserver(article)) return listOf("Article indisponible")
+        return listOf("Stock réservé", banque.debiter(montant), livraison.planifier(article))
+    }
+}
+
+fun main() {
+    Boutique().commander("clavier", 49.9).forEach(::println)
+}`}},
+
+{id:"flyweight", n:"Poids mouche", en:"Flyweight", f:"struct",
+ i:"Économise la mémoire en partageant entre de nombreux objets les données qu'ils ont en commun.",
+ p:"Une forêt de 100 000 arbres. Chaque arbre stocke sa texture et sa couleur, alors qu'il n'existe que trois espèces.",
+ s:"L'état commun (espèce, texture) vit dans quelques objets partagés. Chaque arbre ne garde que ce qui lui est propre : sa position.",
+ k:"getOrPut sur une map suffit pour écrire la fabrique qui réutilise les objets partagés.",
+ c:`class Espece(val nom: String, val couleur: String)   // état partagé
+
+object Pepiniere {
+    private val especes = mutableMapOf<String, Espece>()
+    fun espece(nom: String, couleur: String) =
+        especes.getOrPut("$nom-$couleur") { Espece(nom, couleur) }
+    val nombre get() = especes.size
+}
+
+class Arbre(val x: Int, val y: Int, val espece: Espece)   // état propre
+
+fun main() {
+    val foret = (1..1000).map { Arbre(it, it * 2, Pepiniere.espece("Chêne", "vert")) }
+    println(foret.size.toString() + " arbres, " + Pepiniere.nombre + " espèce en mémoire")
+}`,
+ q:[{q:"Quel état est partagé entre les objets ?",o:["L'état propre à chaque objet, comme sa position","L'état commun, qui ne change pas d'un objet à l'autre","Aucun"],a:1,e:"On partage l'état intrinsèque (commun, immuable). L'état extrinsèque reste dans chaque objet."},
+    {q:"Quand ce pattern vaut-il la peine ?",o:["Quand il y a énormément d'objets très semblables","Dès qu'il y a deux objets","Quand les objets changent souvent d'état"],a:0,e:"Il complique le code. Il ne se justifie que si la mémoire est vraiment un problème."}],
+ x:{t:"Un éditeur de texte affiche des milliers de caractères. Crée une classe Style(police, taille) partagée par une fabrique Styles, et une classe Caractere(lettre, style). Vérifie que 500 caractères en Arial 12 n'utilisent qu'un seul Style.",
+    d:`class Style(val police: String, val taille: Int)
+
+// TODO : object Styles avec obtenir(police, taille) et nombre
+
+// TODO : class Caractere
+
+fun main() {
+    // val texte = (1..500).map { Caractere('a', Styles.obtenir("Arial", 12)) }
+    // println(Styles.nombre)   // 1
+}`,
+    s:`class Style(val police: String, val taille: Int)
+
+object Styles {
+    private val cache = mutableMapOf<String, Style>()
+    fun obtenir(police: String, taille: Int) =
+        cache.getOrPut("$police-$taille") { Style(police, taille) }
+    val nombre get() = cache.size
+}
+
+class Caractere(val lettre: Char, val style: Style)
+
+fun main() {
+    val texte = (1..500).map { Caractere('a', Styles.obtenir("Arial", 12)) }
+    println(Styles.nombre)   // 1
+}`}},
+
+{id:"proxy", n:"Procuration", en:"Proxy", f:"struct",
+ i:"Place un remplaçant devant un objet pour contrôler l'accès à celui-ci.",
+ p:"Charger une image haute définition prend du temps. La charger dès l'ouverture de la page, alors qu'elle ne sera peut-être jamais affichée, est du gaspillage.",
+ s:"Le proxy a la même interface que l'objet réel. Il le crée seulement quand on en a besoin, ou vérifie des droits, ou garde un cache.",
+ k:"by lazy donne le chargement paresseux en une ligne.",
+ c:`interface Image { fun afficher(): String }
+
+class ImageReelle(private val fichier: String) : Image {
+    init { println("Chargement de $fichier...") }   // opération lente
+    override fun afficher() = "Affichage de $fichier"
+}
+
+class ImageProxy(private val fichier: String) : Image {
+    private val reelle by lazy { ImageReelle(fichier) }
+    override fun afficher() = reelle.afficher()
+}
+
+fun main() {
+    val image: Image = ImageProxy("photo.png")   // rien n'est chargé
+    println(image.afficher())                    // chargement ici
+    println(image.afficher())                    // pas de second chargement
+}`,
+ q:[{q:"Quelle différence avec le Décorateur ?",o:["Le proxy contrôle l'accès, le décorateur ajoute du comportement","Le proxy change l'interface","Aucune : ce sont deux noms pour la même chose"],a:0,e:"La structure se ressemble. L'intention diffère : le proxy gère l'accès et souvent le cycle de vie de l'objet réel."},
+    {q:"Lequel de ces usages est typique d'un proxy ?",o:["Traduire une interface en une autre","Mettre en cache les réponses d'un service lent","Parcourir une collection"],a:1,e:"Cache, chargement paresseux, contrôle des droits et journalisation sont les usages classiques."}],
+ x:{t:"ServiceMeteo.temperature(ville) est lent. Écris un proxy MeteoAvecCache qui implémente la même interface Meteo et ne contacte le service qu'une fois par ville.",
+    d:`interface Meteo { fun temperature(ville: String): Int }
+
+class ServiceMeteo : Meteo {
+    override fun temperature(ville: String): Int {
+        println("Appel réseau pour $ville")
+        return ville.length * 3
+    }
+}
+
+// TODO : class MeteoAvecCache
+
+fun main() {
+    // val meteo: Meteo = MeteoAvecCache(ServiceMeteo())
+    // println(meteo.temperature("Lyon"))
+    // println(meteo.temperature("Lyon"))   // pas de second appel réseau
+}`,
+    s:`interface Meteo { fun temperature(ville: String): Int }
+
+class ServiceMeteo : Meteo {
+    override fun temperature(ville: String): Int {
+        println("Appel réseau pour $ville")
+        return ville.length * 3
+    }
+}
+
+class MeteoAvecCache(private val service: Meteo) : Meteo {
+    private val cache = mutableMapOf<String, Int>()
+    override fun temperature(ville: String) =
+        cache.getOrPut(ville) { service.temperature(ville) }
+}
+
+fun main() {
+    val meteo: Meteo = MeteoAvecCache(ServiceMeteo())
+    println(meteo.temperature("Lyon"))
+    println(meteo.temperature("Lyon"))   // pas de second appel réseau
+}`}},
+
+/* ---------- COMPORTEMENT ---------- */
+{id:"chain-of-responsibility", n:"Chaîne de responsabilité", en:"Chain of Responsibility", f:"comp",
+ i:"Fait passer une demande le long d'une chaîne de gestionnaires. Chacun la traite ou la transmet au suivant.",
+ p:"Une demande au support peut être réglée par un bot, un technicien ou un ingénieur. Un gros if/else qui connaît tout le monde devient vite ingérable.",
+ s:"Chaque gestionnaire connaît seulement le suivant. Il traite ce qu'il sait faire et passe le reste.",
+ k:"L'opérateur ?. et l'opérateur ?: rendent le passage au suivant très compact.",
+ c:`abstract class Support(private val suivant: Support? = null) {
+    abstract val nom: String
+    abstract fun peutTraiter(niveau: Int): Boolean
+
+    fun traiter(niveau: Int): String =
+        if (peutTraiter(niveau)) "$nom traite la demande"
+        else suivant?.traiter(niveau) ?: "Personne ne peut traiter"
+}
+class Bot(suivant: Support?) : Support(suivant) {
+    override val nom = "Bot"
+    override fun peutTraiter(niveau: Int) = niveau <= 1
+}
+class Technicien(suivant: Support?) : Support(suivant) {
+    override val nom = "Technicien"
+    override fun peutTraiter(niveau: Int) = niveau <= 2
+}
+class Ingenieur : Support() {
+    override val nom = "Ingénieur"
+    override fun peutTraiter(niveau: Int) = niveau <= 3
+}
+
+fun main() {
+    val support = Bot(Technicien(Ingenieur()))
+    println(support.traiter(2))   // Technicien traite la demande
+}`,
+ q:[{q:"Que connaît chaque maillon de la chaîne ?",o:["Tous les autres maillons","Seulement le maillon suivant","Uniquement l'émetteur"],a:1,e:"Chaque gestionnaire a une référence vers le suivant, rien de plus."},
+    {q:"Que se passe-t-il si aucun maillon ne traite la demande ?",o:["Elle arrive au bout sans être traitée, il faut prévoir ce cas","Une exception est toujours levée","Le premier maillon la traite d'office"],a:0,e:"Le pattern ne garantit pas le traitement. Un cas par défaut en fin de chaîne est une bonne idée."}],
+ x:{t:"Valide un mot de passe avec une chaîne de règles : non vide, au moins 8 caractères, au moins un chiffre. Chaque règle renvoie son message d'erreur ou passe à la suivante. La chaîne renvoie null si tout est bon.",
+    d:`abstract class Regle(private val suivante: Regle? = null) {
+    // TODO : fun verifier(mdp: String): String?
+    // TODO : méthode abstraite erreur(mdp): String?
+}
+
+// TODO : NonVide, LongueurMin, ContientChiffre
+
+fun main() {
+    // val regles = NonVide(LongueurMin(ContientChiffre()))
+    // println(regles.verifier("secret"))
+    // println(regles.verifier("secret123"))
+}`,
+    s:`abstract class Regle(private val suivante: Regle? = null) {
+    fun verifier(mdp: String): String? = erreur(mdp) ?: suivante?.verifier(mdp)
+    protected abstract fun erreur(mdp: String): String?
+}
+class NonVide(s: Regle? = null) : Regle(s) {
+    override fun erreur(mdp: String) = if (mdp.isEmpty()) "Mot de passe vide" else null
+}
+class LongueurMin(s: Regle? = null) : Regle(s) {
+    override fun erreur(mdp: String) = if (mdp.length < 8) "8 caractères minimum" else null
+}
+class ContientChiffre(s: Regle? = null) : Regle(s) {
+    override fun erreur(mdp: String) = if (mdp.none { it.isDigit() }) "Il faut un chiffre" else null
+}
+
+fun main() {
+    val regles = NonVide(LongueurMin(ContientChiffre()))
+    println(regles.verifier("secret"))      // 8 caractères minimum
+    println(regles.verifier("secret123"))   // null
+}`}},
+
+{id:"command", n:"Commande", en:"Command", f:"comp",
+ i:"Transforme une action en objet, pour pouvoir la stocker, la mettre en file ou l'annuler.",
+ p:"Ton éditeur a besoin d'un Ctrl+Z. Si les boutons modifient le texte directement, rien ne garde la trace de ce qui a été fait.",
+ s:"Chaque action devient un objet avec executer() et annuler(). Un historique empile les commandes exécutées.",
+ k:"Sans annulation, une lambda () -> Unit fait une commande parfaite. La classe devient utile dès qu'il faut un annuler().",
+ c:`interface Commande {
+    fun executer()
+    fun annuler()
+}
+class Editeur { var texte = "" }
+
+class Ajouter(private val editeur: Editeur, private val ajout: String) : Commande {
+    override fun executer() { editeur.texte += ajout }
+    override fun annuler() { editeur.texte = editeur.texte.removeSuffix(ajout) }
+}
+
+class Historique {
+    private val pile = ArrayDeque<Commande>()
+    fun lancer(c: Commande) { c.executer(); pile.addLast(c) }
+    fun annuler() { pile.removeLastOrNull()?.annuler() }
+}
+
+fun main() {
+    val editeur = Editeur()
+    val historique = Historique()
+    historique.lancer(Ajouter(editeur, "Bonjour"))
+    historique.lancer(Ajouter(editeur, " le monde"))
+    historique.annuler()
+    println(editeur.texte)   // Bonjour
+}`,
+ q:[{q:"Que contient un objet commande ?",o:["Tout ce qu'il faut pour exécuter l'action plus tard","L'interface graphique","L'historique complet"],a:0,e:"Le destinataire et les paramètres de l'action sont rangés dans la commande."},
+    {q:"Pourquoi ce pattern facilite-t-il l'annulation ?",o:["Chaque commande sait défaire ce qu'elle a fait","L'état est global","Les commandes sont immuables"],a:0,e:"On garde les commandes exécutées dans une pile et on appelle annuler() sur la dernière."}],
+ x:{t:"Une Lampe a un état allumée (Boolean). Crée les commandes Allumer et Eteindre avec annulation, puis une Telecommande qui exécute une commande et peut annuler la dernière.",
+    d:`class Lampe { var allumee = false }
+
+interface Commande {
+    fun executer()
+    fun annuler()
+}
+
+// TODO : Allumer et Eteindre
+
+// TODO : class Telecommande avec appuyer(c) et annuler()
+
+fun main() {
+    // val lampe = Lampe(); val t = Telecommande()
+    // t.appuyer(Allumer(lampe)); println(lampe.allumee)   // true
+    // t.annuler(); println(lampe.allumee)                 // false
+}`,
+    s:`class Lampe { var allumee = false }
+
+interface Commande {
+    fun executer()
+    fun annuler()
+}
+
+class Allumer(private val lampe: Lampe) : Commande {
+    private var avant = false
+    override fun executer() { avant = lampe.allumee; lampe.allumee = true }
+    override fun annuler() { lampe.allumee = avant }
+}
+class Eteindre(private val lampe: Lampe) : Commande {
+    private var avant = false
+    override fun executer() { avant = lampe.allumee; lampe.allumee = false }
+    override fun annuler() { lampe.allumee = avant }
+}
+
+class Telecommande {
+    private val pile = ArrayDeque<Commande>()
+    fun appuyer(c: Commande) { c.executer(); pile.addLast(c) }
+    fun annuler() { pile.removeLastOrNull()?.annuler() }
+}
+
+fun main() {
+    val lampe = Lampe(); val t = Telecommande()
+    t.appuyer(Allumer(lampe)); println(lampe.allumee)   // true
+    t.annuler(); println(lampe.allumee)                 // false
+}`}},
+
+{id:"iterator", n:"Itérateur", en:"Iterator", f:"comp",
+ i:"Parcourt les éléments d'une collection sans révéler comment elle est construite.",
+ p:"Ta playlist stocke ses titres dans une liste aujourd'hui, peut-être dans un arbre demain. Le code qui la parcourt ne devrait pas en dépendre.",
+ s:"La collection fournit un itérateur avec hasNext() et next(). Le client ne voit que ça.",
+ k:"Implémente Iterable<T> et ta classe fonctionne directement avec for, map, filter. Pour générer des valeurs à la demande, regarde sequence { yield(...) }.",
+ c:`class Playlist(private val titres: List<String>) : Iterable<String> {
+    override fun iterator(): Iterator<String> = object : Iterator<String> {
+        private var index = 0
+        override fun hasNext() = index < titres.size
+        override fun next() = titres[index++]
+    }
+}
+
+fun main() {
+    val playlist = Playlist(listOf("Intro", "Refrain", "Final"))
+    for (titre in playlist) println(titre)
+    println(playlist.map { it.uppercase() })
+}`,
+ q:[{q:"Que cache l'itérateur au code client ?",o:["La structure interne de la collection","Le type des éléments","Le nombre d'éléments"],a:0,e:"Liste, arbre ou graphe : le client parcourt de la même manière."},
+    {q:"Quelle interface permet d'utiliser for (x in monObjet) en Kotlin ?",o:["Comparable<T>","Iterable<T>, ou un operator fun iterator()","Collection<T> uniquement"],a:1,e:"La boucle for demande seulement une fonction iterator(), fournie par Iterable ou déclarée avec operator."}],
+ x:{t:"Écris une classe CompteARebours(depart) qui implémente Iterable<Int> et produit depart, depart-1, ..., 1.",
+    d:`// TODO : class CompteARebours(depart: Int) : Iterable<Int>
+
+fun main() {
+    // for (n in CompteARebours(3)) println(n)   // 3, 2, 1
+    // println(CompteARebours(5).toList())
+}`,
+    s:`class CompteARebours(private val depart: Int) : Iterable<Int> {
+    override fun iterator(): Iterator<Int> = object : Iterator<Int> {
+        private var courant = depart
+        override fun hasNext() = courant > 0
+        override fun next() = courant--
+    }
+}
+
+fun main() {
+    for (n in CompteARebours(3)) println(n)   // 3, 2, 1
+    println(CompteARebours(5).toList())
+}`}},
+
+{id:"mediator", n:"Médiateur", en:"Mediator", f:"comp",
+ i:"Réduit les dépendances entre objets en les faisant communiquer par un objet central.",
+ p:"Dans un salon de discussion, si chaque membre garde une référence vers tous les autres, ajouter ou retirer quelqu'un oblige à mettre tout le monde à jour.",
+ s:"Les membres ne parlent qu'au salon. Le salon sait qui est présent et redistribue les messages.",
+ k:"Garde le médiateur petit. S'il grossit trop, il devient la classe qui sait tout et le problème est juste déplacé.",
+ c:`class Salon {
+    private val membres = mutableListOf<Membre>()
+    fun rejoindre(m: Membre) { membres += m }
+    fun diffuser(auteur: Membre, msg: String) =
+        membres.filter { it !== auteur }.forEach { it.recevoir(auteur.nom, msg) }
+}
+
+class Membre(val nom: String, private val salon: Salon) {
+    init { salon.rejoindre(this) }
+    fun dire(msg: String) = salon.diffuser(this, msg)
+    fun recevoir(de: String, msg: String) = println("[$nom] $de : $msg")
+}
+
+fun main() {
+    val salon = Salon()
+    val ana = Membre("Ana", salon)
+    Membre("Bilal", salon); Membre("Chloé", salon)
+    ana.dire("Salut tout le monde")
+}`,
+ q:[{q:"Avec qui les composants communiquent-ils ?",o:["Directement entre eux","Uniquement avec le médiateur","Avec un singleton global"],a:1,e:"Chaque composant ne connaît que le médiateur, ce qui supprime les liens croisés."},
+    {q:"Quel est le risque du pattern ?",o:["Le médiateur devient une classe énorme","Les composants deviennent immuables","On ne peut plus tester"],a:0,e:"Toute la logique de coordination s'y concentre. Il faut veiller à ce qu'il reste lisible."}],
+ x:{t:"Des Avion demandent à atterrir. Ils ne se parlent pas entre eux : une TourDeControle accorde la piste si elle est libre, sinon met l'avion en attente. Quand la piste se libère, le premier en attente atterrit.",
+    d:`class TourDeControle {
+    // TODO : piste occupée ou non, file d'attente
+    // TODO : fun demander(a: Avion): String
+    // TODO : fun liberer(): String
+}
+
+class Avion(val nom: String, private val tour: TourDeControle) {
+    fun atterrir() = tour.demander(this)
+}
+
+fun main() {
+    // val tour = TourDeControle()
+    // println(Avion("AF12", tour).atterrir())
+    // println(Avion("LH34", tour).atterrir())
+    // println(tour.liberer())
+}`,
+    s:`class TourDeControle {
+    private var occupee = false
+    private val attente = ArrayDeque<Avion>()
+
+    fun demander(a: Avion): String =
+        if (!occupee) { occupee = true; a.nom + " : atterrissage autorisé" }
+        else { attente.addLast(a); a.nom + " : en attente" }
+
+    fun liberer(): String {
+        val suivant = attente.removeFirstOrNull()
+        if (suivant == null) { occupee = false; return "Piste libre" }
+        return suivant.nom + " : atterrissage autorisé"
+    }
+}
+
+class Avion(val nom: String, private val tour: TourDeControle) {
+    fun atterrir() = tour.demander(this)
+}
+
+fun main() {
+    val tour = TourDeControle()
+    println(Avion("AF12", tour).atterrir())
+    println(Avion("LH34", tour).atterrir())
+    println(tour.liberer())
+}`}},
+
+{id:"memento", n:"Mémento", en:"Memento", f:"comp",
+ i:"Sauvegarde l'état d'un objet pour pouvoir le restaurer plus tard, sans exposer ses détails internes.",
+ p:"Tu veux des points de sauvegarde dans un éditeur. Si un autre objet va lire tous les champs de l'éditeur pour les copier, l'encapsulation est cassée.",
+ s:"L'éditeur fabrique lui-même un instantané de son état et sait se restaurer à partir de celui-ci. Les autres objets le stockent sans regarder dedans.",
+ k:"Une data class immuable fait un bon instantané. Dans du vrai code, limite sa visibilité (internal ou private) pour que seul l'objet d'origine la lise.",
+ c:`class Editeur {
+    var texte = ""
+    fun sauvegarder() = Instantane(texte)
+    fun restaurer(i: Instantane) { texte = i.texte }
+
+    data class Instantane(val texte: String)
+}
+
+fun main() {
+    val editeur = Editeur()
+    editeur.texte = "Version 1"
+    val sauvegarde = editeur.sauvegarder()
+
+    editeur.texte = "Version 2 ratée"
+    editeur.restaurer(sauvegarde)
+    println(editeur.texte)   // Version 1
+}`,
+ q:[{q:"Qui crée l'instantané ?",o:["L'objet dont on sauvegarde l'état","L'historique","Le code client, en lisant les champs"],a:0,e:"Seul l'objet d'origine connaît son état interne. C'est lui qui produit et relit le mémento."},
+    {q:"Que fait l'objet qui garde les instantanés ?",o:["Il les modifie avant de les rendre","Il les stocke sans en lire le contenu","Il les fusionne"],a:1,e:"Le gardien conserve les mémentos comme des boîtes fermées."}],
+ x:{t:"Un Jeu a un niveau et des points de vie. Ajoute sauvegarder() et charger(sauvegarde), puis une classe Sauvegardes qui garde une pile et sait revenir à la dernière.",
+    d:`class Jeu {
+    var niveau = 1
+    var pv = 100
+    // TODO : data class Sauvegarde, sauvegarder(), charger()
+}
+
+// TODO : class Sauvegardes avec ajouter() et derniere()
+
+fun main() {
+    // val jeu = Jeu(); val saves = Sauvegardes()
+    // saves.ajouter(jeu.sauvegarder())
+    // jeu.niveau = 2; jeu.pv = 10
+    // saves.derniere()?.let { jeu.charger(it) }
+    // println(jeu.niveau.toString() + " / " + jeu.pv)   // 1 / 100
+}`,
+    s:`class Jeu {
+    var niveau = 1
+    var pv = 100
+
+    data class Sauvegarde(val niveau: Int, val pv: Int)
+
+    fun sauvegarder() = Sauvegarde(niveau, pv)
+    fun charger(s: Sauvegarde) { niveau = s.niveau; pv = s.pv }
+}
+
+class Sauvegardes {
+    private val pile = ArrayDeque<Jeu.Sauvegarde>()
+    fun ajouter(s: Jeu.Sauvegarde) = pile.addLast(s)
+    fun derniere() = pile.removeLastOrNull()
+}
+
+fun main() {
+    val jeu = Jeu(); val saves = Sauvegardes()
+    saves.ajouter(jeu.sauvegarder())
+    jeu.niveau = 2; jeu.pv = 10
+    saves.derniere()?.let { jeu.charger(it) }
+    println(jeu.niveau.toString() + " / " + jeu.pv)   // 1 / 100
+}`}},
+
+{id:"observer", n:"Observateur", en:"Observer", f:"comp",
+ i:"Permet à des objets de s'abonner à un autre pour être prévenus quand quelque chose s'y passe.",
+ p:"Des clients veulent savoir quand un produit arrive en boutique. Soit ils reviennent vérifier tous les jours, soit la boutique écrit à tout le monde, même aux non intéressés.",
+ s:"La boutique tient une liste d'abonnés et les prévient à chaque nouveauté. Chacun s'abonne et se désabonne quand il veut.",
+ k:"Une liste de lambdas (T) -> Unit suffit souvent. Pour une propriété, Delegates.observable fait le travail. En asynchrone, on passe à Flow.",
+ c:`class Boutique {
+    private val abonnes = mutableListOf<(String) -> Unit>()
+
+    fun abonner(a: (String) -> Unit) { abonnes += a }
+    fun desabonner(a: (String) -> Unit) { abonnes -= a }
+    fun nouveauProduit(nom: String) = abonnes.forEach { it(nom) }
+}
+
+fun main() {
+    val boutique = Boutique()
+    val alerte: (String) -> Unit = { println("Alerte : $it est arrivé") }
+
+    boutique.abonner(alerte)
+    boutique.abonner { println("Mail envoyé pour $it") }
+    boutique.nouveauProduit("Clavier")
+
+    boutique.desabonner(alerte)
+    boutique.nouveauProduit("Souris")
+}`,
+ q:[{q:"Que sait le sujet sur ses abonnés ?",o:["Leur classe exacte","Seulement comment les prévenir","Rien, il passe par un singleton"],a:1,e:"Il ne connaît qu'une interface ou une fonction de rappel, ce qui garde un couplage faible."},
+    {q:"Quelle erreur classique guette avec ce pattern ?",o:["Oublier de désabonner, et garder des objets en mémoire","Créer trop de sous-classes","Bloquer l'héritage"],a:0,e:"Un abonné jamais retiré reste référencé par le sujet : c'est une fuite de mémoire courante."}],
+ x:{t:"Une StationMeteo a une propriété temperature. Chaque fois qu'elle change, tous les abonnés reçoivent l'ancienne et la nouvelle valeur. Ne préviens personne si la valeur est identique.",
+    d:`class StationMeteo {
+    // TODO : liste d'abonnés (Double, Double) -> Unit
+    // TODO : var temperature avec un setter qui prévient
+    // TODO : fun abonner(...)
+}
+
+fun main() {
+    // val station = StationMeteo()
+    // station.abonner { avant, apres -> println("$avant -> $apres") }
+    // station.temperature = 18.5
+    // station.temperature = 18.5   // rien
+    // station.temperature = 21.0
+}`,
+    s:`class StationMeteo {
+    private val abonnes = mutableListOf<(Double, Double) -> Unit>()
+
+    var temperature = 0.0
+        set(valeur) {
+            if (valeur == field) return
+            val avant = field
+            field = valeur
+            abonnes.forEach { it(avant, valeur) }
+        }
+
+    fun abonner(a: (Double, Double) -> Unit) { abonnes += a }
+}
+
+fun main() {
+    val station = StationMeteo()
+    station.abonner { avant, apres -> println("$avant -> $apres") }
+    station.temperature = 18.5
+    station.temperature = 18.5   // rien
+    station.temperature = 21.0
+}`}},
+
+{id:"state", n:"État", en:"State", f:"comp",
+ i:"Change le comportement d'un objet quand son état interne change, comme s'il changeait de classe.",
+ p:"Un document passe par Brouillon, Relecture, Publié. Chaque méthode finit avec un when sur l'état, et ajouter un état oblige à tous les retoucher.",
+ s:"Chaque état devient un objet avec son propre comportement. Le document délègue à son état courant, qui décide aussi de l'état suivant.",
+ k:"Des object pour les états sans données, ou une sealed interface pour que le compilateur vérifie que tous les cas sont couverts.",
+ c:`interface Etat {
+    val nom: String
+    fun suivant(): Etat
+}
+object Brouillon : Etat {
+    override val nom = "Brouillon"
+    override fun suivant(): Etat = Relecture
+}
+object Relecture : Etat {
+    override val nom = "Relecture"
+    override fun suivant(): Etat = Publie
+}
+object Publie : Etat {
+    override val nom = "Publié"
+    override fun suivant(): Etat = this
+}
+
+class Document {
+    var etat: Etat = Brouillon
+        private set
+    fun avancer() { etat = etat.suivant() }
+}
+
+fun main() {
+    val doc = Document()
+    doc.avancer(); doc.avancer()
+    println(doc.etat.nom)   // Publié
+}`,
+ q:[{q:"Que remplace ce pattern ?",o:["Les gros when ou if sur l'état, répétés dans chaque méthode","Les boucles for","L'héritage d'interface"],a:0,e:"Le comportement de chaque état est regroupé dans sa propre classe."},
+    {q:"Quelle différence avec la Stratégie ?",o:["Les états peuvent se connaître et déclencher les transitions","Aucune","La stratégie a plus de méthodes"],a:0,e:"Les stratégies sont indépendantes et choisies de l'extérieur. Les états s'enchaînent entre eux."}],
+ x:{t:"Un Tourniquet est Verrouille ou Deverrouille. inserer() une pièce le déverrouille, pousser() laisse passer puis le reverrouille. Pousser un tourniquet verrouillé ne fait rien. Chaque action renvoie un message.",
+    d:`interface EtatTourniquet {
+    fun inserer(t: Tourniquet): String
+    fun pousser(t: Tourniquet): String
+}
+
+// TODO : object Verrouille et object Deverrouille
+
+class Tourniquet {
+    var etat: EtatTourniquet = TODO("état de départ")
+    fun inserer() = etat.inserer(this)
+    fun pousser() = etat.pousser(this)
+}
+
+fun main() {
+    // val t = Tourniquet()
+    // println(t.pousser()); println(t.inserer()); println(t.pousser())
+}`,
+    s:`interface EtatTourniquet {
+    fun inserer(t: Tourniquet): String
+    fun pousser(t: Tourniquet): String
+}
+
+object Verrouille : EtatTourniquet {
+    override fun inserer(t: Tourniquet): String { t.etat = Deverrouille; return "Pièce acceptée" }
+    override fun pousser(t: Tourniquet) = "Bloqué"
+}
+object Deverrouille : EtatTourniquet {
+    override fun inserer(t: Tourniquet) = "Déjà déverrouillé, pièce rendue"
+    override fun pousser(t: Tourniquet): String { t.etat = Verrouille; return "Passage" }
+}
+
+class Tourniquet {
+    var etat: EtatTourniquet = Verrouille
+    fun inserer() = etat.inserer(this)
+    fun pousser() = etat.pousser(this)
+}
+
+fun main() {
+    val t = Tourniquet()
+    println(t.pousser()); println(t.inserer()); println(t.pousser())
+}`}},
+
+{id:"strategy", n:"Stratégie", en:"Strategy", f:"comp",
+ i:"Définit une famille d'algorithmes interchangeables et permet d'en changer à l'exécution.",
+ p:"Ton panier applique des remises : aucune, soldes, fidélité. Tout mettre dans une méthode total() avec des if la fait grossir à chaque nouvelle promotion.",
+ s:"Chaque calcul devient un objet avec la même interface. Le panier reçoit celui à utiliser et lui délègue.",
+ k:"En Kotlin, une stratégie est souvent une simple fonction : (Double) -> Double, ou une fun interface pour lui donner un nom.",
+ c:`fun interface Remise { fun appliquer(total: Double): Double }
+
+val aucune = Remise { it }
+val soldes = Remise { it * 0.8 }
+val fidelite = Remise { if (it > 50) it - 5 else it }
+
+class Panier(var remise: Remise = aucune) {
+    private val prix = mutableListOf<Double>()
+    fun ajouter(p: Double) { prix += p }
+    fun total() = remise.appliquer(prix.sum())
+}
+
+fun main() {
+    val panier = Panier()
+    panier.ajouter(40.0); panier.ajouter(20.0)
+    println(panier.total())     // 60.0
+    panier.remise = soldes
+    println(panier.total())     // 48.0
+}`,
+ q:[{q:"Qui choisit la stratégie ?",o:["Le client, qui la fournit au contexte","La stratégie elle-même","Le compilateur"],a:0,e:"Le contexte reçoit la stratégie de l'extérieur et peut en changer en cours de route."},
+    {q:"Quelle forme minimale prend une stratégie en Kotlin ?",o:["Une classe abstraite obligatoire","Une lambda ou une référence de fonction","Un object avec companion"],a:1,e:"Quand la stratégie n'a qu'une méthode, un type fonction suffit."}],
+ x:{t:"Un Navigateur calcule une durée de trajet selon le mode : voiture (50 km/h), vélo (15 km/h), marche (5 km/h). Écris une fun interface Itineraire avec dureeMinutes(km: Double): Double, trois stratégies, et un Navigateur dont on peut changer le mode.",
+    d:`fun interface Itineraire { fun dureeMinutes(km: Double): Double }
+
+// TODO : voiture, velo, marche
+
+// TODO : class Navigateur(var mode: Itineraire)
+
+fun main() {
+    // val nav = Navigateur(voiture)
+    // println(nav.trajet(10.0))   // 12.0
+    // nav.mode = marche
+    // println(nav.trajet(10.0))   // 120.0
+}`,
+    s:`fun interface Itineraire { fun dureeMinutes(km: Double): Double }
+
+val voiture = Itineraire { it / 50 * 60 }
+val velo = Itineraire { it / 15 * 60 }
+val marche = Itineraire { it / 5 * 60 }
+
+class Navigateur(var mode: Itineraire) {
+    fun trajet(km: Double) = mode.dureeMinutes(km)
+}
+
+fun main() {
+    val nav = Navigateur(voiture)
+    println(nav.trajet(10.0))   // 12.0
+    nav.mode = marche
+    println(nav.trajet(10.0))   // 120.0
+}`}},
+
+{id:"template-method", n:"Patron de méthode", en:"Template Method", f:"comp",
+ i:"Fixe le squelette d'un algorithme dans une classe mère et laisse les sous-classes en redéfinir certaines étapes.",
+ p:"Tes rapports de ventes et de stocks suivent le même déroulé : en-tête, corps, pied. Seul le corps change, mais tout le code est dupliqué.",
+ s:"La classe mère écrit la séquence une fois. Les sous-classes ne fournissent que les étapes qui varient.",
+ k:"En Kotlin les méthodes sont finales par défaut : le squelette est protégé sans effort. Marque open ou abstract seulement les étapes à personnaliser.",
+ c:`abstract class Rapport {
+    // le squelette : non redéfinissable
+    fun generer() = listOf(entete(), corps(), pied()).joinToString(" | ")
+
+    protected open fun entete() = "Rapport"
+    protected abstract fun corps(): String
+    protected open fun pied() = "Fin"
+}
+
+class RapportVentes : Rapport() {
+    override fun corps() = "Ventes : 42"
+}
+class RapportStock : Rapport() {
+    override fun entete() = "Inventaire"
+    override fun corps() = "Stock : 310 articles"
+}
+
+fun main() {
+    println(RapportVentes().generer())
+    println(RapportStock().generer())
+}`,
+ q:[{q:"Où est écrit l'ordre des étapes ?",o:["Dans chaque sous-classe","Dans la classe mère, une seule fois","Dans le code client"],a:1,e:"La méthode patron de la classe mère appelle les étapes dans l'ordre. Les sous-classes ne le changent pas."},
+    {q:"Quelle différence avec la Stratégie ?",o:["Le patron de méthode repose sur l'héritage, la stratégie sur la composition","Aucune","La stratégie interdit les interfaces"],a:0,e:"Ici on varie des étapes par sous-classe. La stratégie remplace l'algorithme entier par un objet."}],
+ x:{t:"Préparer un thé ou un café suit les mêmes étapes : faire bouillir l'eau, infuser, verser, ajouter un supplément. Écris BoissonChaude avec la méthode preparer(), puis The et Cafe. Le supplément est facultatif (vide par défaut).",
+    d:`abstract class BoissonChaude {
+    // TODO : fun preparer(): List<String>
+    // TODO : étapes communes, étapes abstraites, étape facultative
+}
+
+// TODO : The et Cafe
+
+fun main() {
+    // The().preparer().forEach(::println)
+}`,
+    s:`abstract class BoissonChaude {
+    fun preparer(): List<String> =
+        listOf("Faire bouillir l'eau", infuser(), "Verser dans la tasse", supplement())
+            .filter { it.isNotEmpty() }
+
+    protected abstract fun infuser(): String
+    protected open fun supplement() = ""
+}
+
+class The : BoissonChaude() {
+    override fun infuser() = "Laisser infuser le sachet"
+    override fun supplement() = "Ajouter du citron"
+}
+class Cafe : BoissonChaude() {
+    override fun infuser() = "Passer l'eau sur le café moulu"
+}
+
+fun main() {
+    The().preparer().forEach(::println)
+}`}},
+
+{id:"visitor", n:"Visiteur", en:"Visitor", f:"comp",
+ i:"Ajoute de nouvelles opérations à une hiérarchie de classes sans modifier ces classes.",
+ p:"Tu as des formes (Cercle, Carré) et tu veux calculer leur aire, puis les exporter, puis les dessiner. Ajouter une méthode dans chaque forme à chaque fois les alourdit.",
+ s:"Chaque opération devient une classe visiteur, avec une méthode par type de forme. Les formes n'ont qu'une méthode accepter(visiteur) qui appelle la bonne.",
+ k:"Avec une sealed interface et un when exhaustif, on obtient souvent le même résultat plus simplement. Le Visiteur garde son intérêt quand on ne peut pas toucher à la hiérarchie.",
+ c:`interface Visiteur<R> {
+    fun cercle(c: Cercle): R
+    fun carre(c: Carre): R
+}
+interface Forme { fun <R> accepter(v: Visiteur<R>): R }
+
+class Cercle(val rayon: Double) : Forme {
+    override fun <R> accepter(v: Visiteur<R>) = v.cercle(this)
+}
+class Carre(val cote: Double) : Forme {
+    override fun <R> accepter(v: Visiteur<R>) = v.carre(this)
+}
+
+class Aire : Visiteur<Double> {
+    override fun cercle(c: Cercle) = Math.PI * c.rayon * c.rayon
+    override fun carre(c: Carre) = c.cote * c.cote
+}
+class Nom : Visiteur<String> {
+    override fun cercle(c: Cercle) = "cercle"
+    override fun carre(c: Carre) = "carré"
+}
+
+fun main() {
+    val formes = listOf(Cercle(1.0), Carre(2.0))
+    formes.forEach { println(it.accepter(Nom()) + " : " + it.accepter(Aire())) }
+}`,
+ q:[{q:"Que faut-il écrire pour ajouter une nouvelle opération ?",o:["Une méthode dans chaque classe visitée","Une nouvelle classe visiteur","Une nouvelle interface Forme"],a:1,e:"C'est tout l'intérêt : les classes visitées ne bougent pas."},
+    {q:"Qu'est-ce qui devient pénible avec un Visiteur ?",o:["Ajouter un nouveau type d'élément visité","Ajouter une opération","Parcourir une liste"],a:0,e:"Un nouveau type oblige à ajouter une méthode dans tous les visiteurs existants."}],
+ x:{t:"Des expressions arithmétiques : Nombre(valeur) et Addition(gauche, droite). Écris l'interface VisiteurExpr, un visiteur Calcul qui renvoie le résultat et un visiteur Affichage qui renvoie le texte, par exemple « (1 + 2) ».",
+    d:`interface VisiteurExpr<R> {
+    fun nombre(n: Nombre): R
+    fun addition(a: Addition): R
+}
+interface Expr { fun <R> accepter(v: VisiteurExpr<R>): R }
+
+// TODO : Nombre et Addition
+
+// TODO : Calcul et Affichage
+
+fun main() {
+    // val e = Addition(Nombre(1), Addition(Nombre(2), Nombre(3)))
+    // println(e.accepter(Affichage()) + " = " + e.accepter(Calcul()))
+}`,
+    s:`interface VisiteurExpr<R> {
+    fun nombre(n: Nombre): R
+    fun addition(a: Addition): R
+}
+interface Expr { fun <R> accepter(v: VisiteurExpr<R>): R }
+
+class Nombre(val valeur: Int) : Expr {
+    override fun <R> accepter(v: VisiteurExpr<R>) = v.nombre(this)
+}
+class Addition(val gauche: Expr, val droite: Expr) : Expr {
+    override fun <R> accepter(v: VisiteurExpr<R>) = v.addition(this)
+}
+
+class Calcul : VisiteurExpr<Int> {
+    override fun nombre(n: Nombre) = n.valeur
+    override fun addition(a: Addition) = a.gauche.accepter(this) + a.droite.accepter(this)
+}
+class Affichage : VisiteurExpr<String> {
+    override fun nombre(n: Nombre) = n.valeur.toString()
+    override fun addition(a: Addition) =
+        "(" + a.gauche.accepter(this) + " + " + a.droite.accepter(this) + ")"
+}
+
+fun main() {
+    val e = Addition(Nombre(1), Addition(Nombre(2), Nombre(3)))
+    println(e.accepter(Affichage()) + " = " + e.accepter(Calcul()))
+}`}}
+];
+
+/* ---------- état ---------- */
+const KEY = "atelier-dp-kotlin-v1";
+const PARTS = {cours:"Cours", qcm:"QCM", exo:"Exercice"};
+let S = {pats:P.map(p=>p.id), parts:["cours","qcm","exo"], cur:P[0].id, prog:{}};
+try{
+  const raw = JSON.parse(localStorage.getItem(KEY) || "null");
+  if(raw && Array.isArray(raw.pats)){
+    S.pats = raw.pats.filter(id=>P.some(p=>p.id===id));
+    S.parts = (raw.parts||[]).filter(k=>PARTS[k]); if(!S.parts.length) S.parts=["cours"];
+    S.cur = raw.cur; S.prog = raw.prog || {};
+  }
+}catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+const byId = id => P.find(p=>p.id===id);
+const selected = () => P.filter(p=>S.pats.includes(p.id));
+const prog = id => (S.prog[id] = S.prog[id] || {q:{}, x:null, d:null});
+
+/* ---------- petits outils ---------- */
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for(const k in (attrs||{})){
+    const v = attrs[k];
+    if(k==="class") n.className = v;
+    else if(k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if(v!==false && v!=null) n.setAttribute(k, v);
+  }
+  for(const kid of kids){ if(kid==null) continue; n.append(kid.nodeType ? kid : document.createTextNode(kid)); }
+  return n;
+}
+const KW = "abstract|apply|by|class|companion|data|else|false|for|fun|get|if|in|init|interface|internal|null|object|open|operator|override|private|protected|return|sealed|set|super|this|true|val|var|when|while";
+const RE = new RegExp('(//.*$)|("(?:[^"\\\\]|\\\\.)*")|(\'(?:[^\'\\\\]|\\\\.)\')|\\b(' + KW + ')\\b|\\b(\\d+(?:\\.\\d+)?)\\b', "gm");
+function codeBlock(src){
+  const pre = el("pre");
+  let last = 0, m;
+  RE.lastIndex = 0;
+  while((m = RE.exec(src))){
+    if(m.index > last) pre.append(src.slice(last, m.index));
+    const cls = m[1] ? "com" : (m[2]||m[3]) ? "str" : m[4] ? "kw" : "num";
+    pre.append(el("span", {class:cls}, m[0]));
+    last = m.index + m[0].length;
+  }
+  pre.append(src.slice(last));
+  return pre;
+}
+
+/* ---------- réglages ---------- */
+function renderConfig(){
+  const fams = document.getElementById("fams"); fams.textContent = "";
+  const all = S.pats.length === P.length;
+  fams.append(el("button", {class:"tog", "aria-pressed":String(all), onclick:()=>{
+    S.pats = all ? [] : P.map(p=>p.id); update();
+  }}, "Tous"));
+  for(const f in FAMS){
+    const ids = P.filter(p=>p.f===f).map(p=>p.id);
+    const on = ids.every(id=>S.pats.includes(id));
+    fams.append(el("button", {class:"tog", "aria-pressed":String(on && !all), onclick:()=>{
+      if(all) S.pats = ids;                                   // depuis « Tous » : ne garder que cette famille
+      else if(on) S.pats = S.pats.filter(id=>!ids.includes(id));
+      else S.pats = P.map(p=>p.id).filter(id=>S.pats.includes(id) || ids.includes(id));
+      update();
+    }}, FAMS[f] + " (" + ids.length + ")"));
+  }
+
+  const chips = document.getElementById("chips"); chips.textContent = "";
+  for(const f in FAMS){
+    const g = el("div", {class:"famgroup f-"+f}, el("div", {class:"famname"}, FAMS[f]));
+    const row = el("div", {class:"row"});
+    P.filter(p=>p.f===f).forEach(p=>{
+      const on = S.pats.includes(p.id);
+      row.append(el("button", {class:"chip", "aria-pressed":String(on), onclick:()=>{
+        S.pats = on ? S.pats.filter(id=>id!==p.id) : P.map(x=>x.id).filter(id=>S.pats.includes(id)||id===p.id);
+        update();
+      }}, p.n));
+    });
+    g.append(row); chips.append(g);
+  }
+  document.getElementById("pickerSum").textContent = "Choisir pattern par pattern (" + S.pats.length + " sur " + P.length + ")";
+
+  const parts = document.getElementById("parts"); parts.textContent = "";
+  for(const k in PARTS){
+    const on = S.parts.includes(k);
+    parts.append(el("button", {class:"tog", "aria-pressed":String(on), onclick:()=>{
+      if(on && S.parts.length===1) return;                     // garder au moins une partie
+      S.parts = on ? S.parts.filter(x=>x!==k) : Object.keys(PARTS).filter(x=>S.parts.includes(x)||x===k);
+      update();
+    }}, PARTS[k]));
+  }
+}
+
+/* ---------- sommaire ---------- */
+function status(p){
+  const pr = prog(p.id), bits = [];
+  if(S.parts.includes("qcm")){
+    const done = Object.keys(pr.q).length;
+    if(done){ const ok = p.q.filter((q,i)=>pr.q[i]===q.a).length; bits.push("QCM " + ok + "/" + p.q.length); }
+  }
+  if(S.parts.includes("exo") && pr.x) bits.push(pr.x==="ok" ? "exo réussi" : "exo à revoir");
+  return bits.join(" · ");
+}
+function renderToc(){
+  const list = selected(), toc = document.getElementById("toc"); toc.textContent = "";
+  document.getElementById("tocCount").textContent = list.length + (list.length>1 ? " patterns" : " pattern");
+  list.forEach(p=>{
+    toc.append(el("li", {class:"f-"+p.f},
+      el("button", {"aria-current":String(p.id===S.cur), onclick:()=>go(p.id, true)},
+        el("span", {class:"dot"}), el("span", null, p.n), el("span", {class:"st"}, status(p)))));
+  });
+}
+
+/* ---------- fiche ---------- */
+function renderLesson(){
+  const box = document.getElementById("lesson"); box.textContent = "";
+  const list = selected();
+  if(!list.length){
+    box.append(el("p", {class:"empty"}, "Aucun pattern sélectionné. Choisis une famille ou un pattern dans les réglages."));
+    return;
+  }
+  const p = byId(S.cur), pr = prog(p.id), idx = list.indexOf(p);
+  box.className = "panel lesson f-" + p.f;
+  box.append(el("header", null,
+    el("div", {class:"row", style:"align-items:center"},
+      el("span", {class:"pill"}, FAMS[p.f]),
+      el("span", {class:"sub"}, (idx+1) + " / " + list.length + " · " + p.en)),
+    el("h2", null, p.n),
+    el("p", null, p.i)));
+
+  if(S.parts.includes("cours")){
+    box.append(el("section", {class:"sec"},
+      el("h3", null, "Cours"),
+      el("div", {class:"kv"}, el("b", null, "Le problème"), el("p", null, p.p)),
+      el("div", {class:"kv"}, el("b", null, "L'idée"), el("p", null, p.s)),
+      el("p", {class:"tip"}, "En Kotlin : " + p.k),
+      codeBlock(p.c)));
+  }
+
+  if(S.parts.includes("qcm")){
+    const sec = el("section", {class:"sec"}, el("h3", null, "QCM"));
+    p.q.forEach((q, qi)=>{
+      const ans = pr.q[qi], done = ans !== undefined;
+      const wrap = el("div", {class:"q"}, el("p", null, (qi+1) + ". " + q.q));
+      q.o.forEach((o, oi)=>{
+        let cls = "opt";
+        if(done && oi===q.a) cls += " ok"; else if(done && oi===ans) cls += " ko";
+        wrap.append(el("button", {class:cls, disabled:done, onclick:()=>{ pr.q[qi]=oi; save(); renderToc(); renderLesson(); }}, o));
+      });
+      if(done) wrap.append(el("p", {class:"fb"}, (ans===q.a ? "Bonne réponse. " : "Raté. ") + q.e));
+      sec.append(wrap);
+    });
+    if(Object.keys(pr.q).length) sec.append(el("div", null,
+      el("button", {class:"btn ghost", onclick:()=>{ pr.q={}; save(); renderToc(); renderLesson(); }}, "Refaire le QCM")));
+    box.append(sec);
+  }
+
+  if(S.parts.includes("exo")){
+    const ta = el("textarea", {id:"code-"+p.id, spellcheck:"false", autocapitalize:"off", autocomplete:"off", "aria-label":"Ton code Kotlin"});
+    ta.value = pr.d != null ? pr.d : p.x.d;
+    ta.addEventListener("input", ()=>{ pr.d = ta.value; save(); });
+    const copyBtn = el("button", {class:"btn ghost", onclick:async()=>{
+      try{ await navigator.clipboard.writeText(ta.value); copyBtn.textContent = "Copié"; }
+      catch(e){ ta.select(); copyBtn.textContent = "Sélectionné, copie à la main"; }
+      setTimeout(()=>copyBtn.textContent="Copier mon code", 1800);
+    }}, "Copier mon code");
+    const sol = el("div", {style:"display:none;flex-direction:column;gap:10px"},
+      codeBlock(p.x.s),
+      el("p", {class:"note"}, "Compare avec ton code. Plusieurs solutions sont valables."),
+      el("div", {class:"row"},
+        el("button", {class:"btn", onclick:()=>{ pr.x="ok"; save(); renderToc(); mark(); }}, "J'ai réussi"),
+        el("button", {class:"btn ghost", onclick:()=>{ pr.x="ko"; save(); renderToc(); mark(); }}, "À revoir")));
+    const verdict = el("p", {class:"fb"});
+    const mark = ()=>{ verdict.textContent = pr.x==="ok" ? "Marqué comme réussi." : pr.x==="ko" ? "Marqué à revoir." : ""; };
+    mark();
+    const showBtn = el("button", {class:"btn ghost", onclick:()=>{
+      const open = sol.style.display === "none";
+      sol.style.display = open ? "flex" : "none";
+      showBtn.textContent = open ? "Masquer la solution" : "Voir la solution";
+    }}, "Voir la solution");
+    box.append(el("section", {class:"sec"},
+      el("h3", null, "Exercice"),
+      el("p", null, p.x.t),
+      ta,
+      el("div", {class:"row"},
+        copyBtn,
+        el("button", {class:"btn ghost", onclick:()=>{ pr.d=null; ta.value=p.x.d; save(); }}, "Réinitialiser"),
+        showBtn),
+      el("p", {class:"note"}, "Pour exécuter ton code : copie-le, puis colle-le sur ",
+        el("a", {href:"https://play.kotlinlang.org/", target:"_blank", rel:"noopener"}, "play.kotlinlang.org"), "."),
+      sol, verdict));
+  }
+
+  box.append(el("nav", {class:"nav"},
+    el("button", {class:"btn ghost", disabled:idx===0, onclick:()=>go(list[idx-1].id, true)}, "← Précédent"),
+    el("button", {class:"btn", disabled:idx===list.length-1, onclick:()=>go(list[idx+1].id, true)}, "Suivant →")));
+}
+
+/* ---------- navigation ---------- */
+function go(id, scroll){
+  S.cur = id; save();
+  try{ if(location.hash !== "#"+id) history.replaceState(null, "", "#"+id); }catch(e){}
+  renderToc(); renderLesson();
+  if(scroll) document.getElementById("lesson").scrollIntoView({block:"start",
+    behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+}
+function update(){
+  const list = selected();
+  if(list.length && !list.some(p=>p.id===S.cur)) S.cur = list[0].id;
+  save(); renderConfig(); renderToc(); renderLesson();
+}
+function fromHash(){
+  const id = location.hash.slice(1);
+  if(byId(id)){
+    if(!S.pats.includes(id)) S.pats = P.map(p=>p.id).filter(x=>S.pats.includes(x)||x===id);
+    S.cur = id;
+  }
+}
+addEventListener("hashchange", ()=>{ fromHash(); update(); });
+if(!byId(S.cur)) S.cur = P[0].id;
+fromHash(); update();
+</script>
+</body>
+</html>
