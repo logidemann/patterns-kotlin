@@ -2246,6 +2246,678 @@ fun main() {
     println(copie)
     println(RapportAdmission().generer(patient))
     println(RapportSortie().generer(patient))
+}`},
+
+{id:"domotique", t:"Une maison connectée",
+ ctx:["Une jeune entreprise vend un boîtier qui pilote les appareils de la maison : lampes, radiateurs, capteurs. Une télécommande programmable et une application envoient les ordres.",
+      "On te confie la conception du logiciel du boîtier. Voici les besoins."],
+ b:[{t:"Chaque bouton de la télécommande doit pouvoir recevoir n'importe quelle action (allumer le radiateur, allumer la lampe…). Les actions effectuées sont gardées en mémoire, pour pouvoir annuler la dernière.", p:"command",
+     w:"Une action devient un objet autonome, que l'on peut attribuer à un bouton, garder dans un historique et annuler : c'est la Commande."},
+    {t:"Toutes les actions passent par la centrale, qui tient le journal de la maison. Il n'y a qu'une centrale dans une maison : tout le code doit s'adresser à la même.", p:"singleton",
+     w:"Une seule instance, la même pour tout le code : c'est le Singleton."},
+    {t:"Le client possède des ampoules d'une autre marque, Lumix. Leur code, qu'on ne peut pas modifier, ne connaît que reglerIntensite(niveau), alors que notre boîtier pilote des objets Appareil avec allumer() et eteindre().", p:"adapter",
+     w:"Deux interfaces incompatibles à faire collaborer, sans toucher à la classe existante : c'est l'Adapteur."},
+    {t:"Quand le capteur du salon détecte un mouvement, l'alarme et l'éclairage doivent réagir. D'autres appareils pourront s'inscrire plus tard, sans modifier le capteur.", p:"observer",
+     w:"Des objets s'abonnent pour être prévenus d'un événement, et le capteur ne connaît pas ses abonnés à l'avance : c'est l'Observateur."}],
+ d:`// Les ampoules d'une autre marque : interdit de modifier cette classe.
+class AmpouleLumix {
+    fun reglerIntensite(niveau: Int) = "Lumix à " + niveau + " %"
+}
+
+interface Appareil {
+    fun allumer(): String
+    fun eteindre(): String
+}
+class Radiateur : Appareil {
+    override fun allumer() = "Radiateur allumé"
+    override fun eteindre() = "Radiateur éteint"
+}
+
+// Besoin 1 : une action Allumer annulable, et une Telecommande avec appuyer() et annuler()
+
+// Besoin 2 : la Centrale, unique, avec noter(ligne) et nombreActions()
+
+// Besoin 3 : utiliser une AmpouleLumix comme un Appareil
+
+// Besoin 4 : un CapteurMouvement auquel on peut s'abonner
+
+fun main() {
+    // val lampe: Appareil = AdapteurLumix(AmpouleLumix())
+    // val telecommande = Telecommande()
+    // telecommande.appuyer(Allumer(Radiateur()))
+    // telecommande.appuyer(Allumer(lampe))
+    // telecommande.annuler()
+    // val capteur = CapteurMouvement("salon")
+    // capteur.abonner { Centrale.noter("Alarme : mouvement dans le " + it) }
+    // capteur.abonner { telecommande.appuyer(Allumer(lampe)) }
+    // capteur.detecter()
+    // println(Centrale.nombreActions().toString() + " actions dans le journal")
+}`,
+ s:`class AmpouleLumix {
+    fun reglerIntensite(niveau: Int) = "Lumix à " + niveau + " %"
+}
+
+interface Appareil {
+    fun allumer(): String
+    fun eteindre(): String
+}
+class Radiateur : Appareil {
+    override fun allumer() = "Radiateur allumé"
+    override fun eteindre() = "Radiateur éteint"
+}
+
+// Besoin 3 : Adapteur
+class AdapteurLumix(private val ampoule: AmpouleLumix) : Appareil {
+    override fun allumer() = ampoule.reglerIntensite(100)
+    override fun eteindre() = ampoule.reglerIntensite(0)
+}
+
+// Besoin 2 : Singleton
+object Centrale {
+    private val journal = mutableListOf<String>()
+    fun noter(ligne: String) {
+        journal += ligne
+        println(ligne)
+    }
+    fun nombreActions() = journal.size
+}
+
+// Besoin 1 : Commande
+interface Commande {
+    fun executer()
+    fun annuler()
+}
+class Allumer(private val appareil: Appareil) : Commande {
+    override fun executer() = Centrale.noter(appareil.allumer())
+    override fun annuler() = Centrale.noter(appareil.eteindre())
+}
+class Telecommande {
+    private val historique = ArrayDeque<Commande>()
+    fun appuyer(c: Commande) { c.executer(); historique.addLast(c) }
+    fun annuler() { historique.removeLastOrNull()?.annuler() }
+}
+
+// Besoin 4 : Observateur
+fun interface Ecouteur { fun mouvementDetecte(piece: String) }
+class CapteurMouvement(private val piece: String) {
+    private val ecouteurs = mutableListOf<Ecouteur>()
+    fun abonner(e: Ecouteur) { ecouteurs += e }
+    fun detecter() = ecouteurs.forEach { it.mouvementDetecte(piece) }
+}
+
+fun main() {
+    val lampe: Appareil = AdapteurLumix(AmpouleLumix())
+    val telecommande = Telecommande()
+    telecommande.appuyer(Allumer(Radiateur()))
+    telecommande.appuyer(Allumer(lampe))
+    telecommande.annuler()
+    val capteur = CapteurMouvement("salon")
+    capteur.abonner { Centrale.noter("Alarme : mouvement dans le " + it) }
+    capteur.abonner { telecommande.appuyer(Allumer(lampe)) }
+    capteur.detecter()
+    println(Centrale.nombreActions().toString() + " actions dans le journal")
+}`},
+
+{id:"distributeur", t:"Un distributeur de boissons",
+ ctx:["Une entreprise installe des distributeurs de boissons chaudes dans les gares. Le client insère une pièce, choisit sa boisson et ses suppléments, puis la machine le sert.",
+      "Tu dois concevoir le logiciel embarqué. Les besoins sont les suivants."],
+ b:[{t:"Le client peut ajouter du lait, du sirop, ou les deux, à n'importe quelle boisson. Chaque supplément modifie le nom et le prix, et ils se cumulent librement. On refuse d'écrire une classe par combinaison (CaféLait, CaféLaitSirop…).", p:"decorator",
+     w:"Des comportements ajoutés dynamiquement, par des enveloppes cumulables autour de l'objet : c'est le Décorateur."},
+    {t:"Toutes les machines servent de la même façon, mais chaque modèle de machine (à café, à thé) décide lui-même de la boisson qu'il fabrique. Le code de service ne doit pas nommer de classe de boisson.", p:"factory-method",
+     w:"La création d'un objet est laissée à des sous-classes, derrière une méthode de création : c'est la Factory."},
+    {t:"Le distributeur ne répond pas de la même manière selon sa situation : en attente d'une pièce, prêt à servir, ou en panne. Par exemple, choisir une boisson sans avoir payé doit être refusé.", p:"state",
+     w:"Le comportement dépend de l'état courant, comme si l'objet changeait de classe : c'est le patron État."},
+    {t:"Le calcul du prix final varie : tarif normal la plupart du temps, moitié prix pendant le happy hour. L'exploitant doit pouvoir changer de tarif à tout moment, et en ajouter d'autres plus tard.", p:"strategy",
+     w:"Plusieurs algorithmes interchangeables pendant l'exécution : c'est la Stratégie."}],
+ d:`interface Boisson {
+    fun nom(): String
+    fun prix(): Double
+}
+class Cafe : Boisson {
+    override fun nom() = "Café"
+    override fun prix() = 1.5
+}
+class The : Boisson {
+    override fun nom() = "Thé"
+    override fun prix() = 1.0
+}
+
+// Besoin 1 : Lait (+0.5 €) et Sirop (+0.25 €), cumulables sur une Boisson
+
+// Besoin 2 : une Machine abstraite avec servir() ; MachineCafe et MachineThe créent leur boisson
+
+// Besoin 3 : un Distributeur avec insererPiece() et choisir(boisson),
+//            qui dépend de son état (AttentePiece, Pret, EnPanne)
+
+// Besoin 4 : des tarifs interchangeables (tarifNormal, happyHour)
+
+fun main() {
+    // val commande = Sirop(Lait(Cafe()))
+    // println(commande.nom() + " : " + commande.prix() + " €")
+    // println(MachineThe().servir())
+    // val distributeur = Distributeur(tarifNormal)
+    // println(distributeur.choisir(commande))
+    // println(distributeur.insererPiece())
+    // println(distributeur.choisir(commande))
+    // distributeur.tarif = happyHour
+    // println(distributeur.insererPiece())
+    // println(distributeur.choisir(Cafe()))
+    // distributeur.etat = EnPanne
+    // println(distributeur.insererPiece())
+}`,
+ s:`interface Boisson {
+    fun nom(): String
+    fun prix(): Double
+}
+class Cafe : Boisson {
+    override fun nom() = "Café"
+    override fun prix() = 1.5
+}
+class The : Boisson {
+    override fun nom() = "Thé"
+    override fun prix() = 1.0
+}
+
+// Besoin 1 : Décorateur
+abstract class Supplement(private val base: Boisson) : Boisson {
+    override fun nom() = base.nom()
+    override fun prix() = base.prix()
+}
+class Lait(b: Boisson) : Supplement(b) {
+    override fun nom() = super.nom() + " + lait"
+    override fun prix() = super.prix() + 0.5
+}
+class Sirop(b: Boisson) : Supplement(b) {
+    override fun nom() = super.nom() + " + sirop"
+    override fun prix() = super.prix() + 0.25
+}
+
+// Besoin 2 : Factory
+abstract class Machine {
+    abstract fun creerBoisson(): Boisson            // la méthode de création
+    fun servir() = "Voici : " + creerBoisson().nom()
+}
+class MachineCafe : Machine() { override fun creerBoisson(): Boisson = Cafe() }
+class MachineThe : Machine() { override fun creerBoisson(): Boisson = The() }
+
+// Besoin 4 : Stratégie
+fun interface Tarif { fun appliquer(prix: Double): Double }
+val tarifNormal = Tarif { it }
+val happyHour = Tarif { it / 2 }
+
+// Besoin 3 : État
+interface EtatDistributeur {
+    fun insererPiece(d: Distributeur): String
+    fun choisir(d: Distributeur, b: Boisson): String
+}
+object AttentePiece : EtatDistributeur {
+    override fun insererPiece(d: Distributeur): String { d.etat = Pret; return "Pièce acceptée" }
+    override fun choisir(d: Distributeur, b: Boisson) = "Insère d'abord une pièce"
+}
+object Pret : EtatDistributeur {
+    override fun insererPiece(d: Distributeur) = "Pièce déjà insérée"
+    override fun choisir(d: Distributeur, b: Boisson): String {
+        d.etat = AttentePiece
+        return b.nom() + " servi pour " + d.tarif.appliquer(b.prix()) + " €"
+    }
+}
+object EnPanne : EtatDistributeur {
+    override fun insererPiece(d: Distributeur) = "Distributeur en panne"
+    override fun choisir(d: Distributeur, b: Boisson) = "Distributeur en panne"
+}
+
+class Distributeur(var tarif: Tarif) {
+    var etat: EtatDistributeur = AttentePiece
+    fun insererPiece() = etat.insererPiece(this)
+    fun choisir(b: Boisson) = etat.choisir(this, b)
+}
+
+fun main() {
+    val commande = Sirop(Lait(Cafe()))
+    println(commande.nom() + " : " + commande.prix() + " €")
+    println(MachineThe().servir())
+    val distributeur = Distributeur(tarifNormal)
+    println(distributeur.choisir(commande))
+    println(distributeur.insererPiece())
+    println(distributeur.choisir(commande))
+    distributeur.tarif = happyHour
+    println(distributeur.insererPiece())
+    println(distributeur.choisir(Cafe()))
+    distributeur.etat = EnPanne
+    println(distributeur.insererPiece())
+}`},
+
+{id:"cours-en-ligne", t:"Une plateforme de cours en ligne",
+ ctx:["Une école lance sa plateforme de cours en ligne. Les enseignants y organisent leurs cours en chapitres et en leçons, créent des quiz, et les élèves passent des évaluations.",
+      "L'équipe pédagogique a exprimé quatre besoins."],
+ b:[{t:"Un cours est fait de chapitres, qui contiennent des leçons mais aussi d'autres chapitres. On veut obtenir la durée d'une leçon ou celle d'un chapitre entier par le même appel, sans se demander ce qu'on a en main.", p:"composite",
+     w:"Une arborescence dont les éléments simples et les ensembles se manipulent de la même façon : c'est le Composite."},
+    {t:"Un quiz se prépare en plusieurs fois : on ajoute des questions une à une, on règle éventuellement la note minimale, puis on obtient le quiz terminé, qui ne bouge plus.", p:"builder",
+     w:"Une construction étape par étape, avec des réglages optionnels, terminée par build() : c'est le Builder."},
+    {t:"Toute évaluation suit le même déroulé : accueil de l'élève, épreuve, correction, envoi du résultat. Seules l'épreuve, et parfois la correction, changent selon le type d'évaluation. L'ordre ne doit pas pouvoir être modifié.", p:"template-method",
+     w:"Un squelette d'algorithme fixé dans la classe mère, avec des étapes redéfinies par les classes filles : c'est la Méthode."},
+    {t:"On ajoutera souvent de nouveaux traitements sur les contenus d'un cours : afficher le sommaire, compter les leçons, demain exporter en PDF. Les classes Lecon et Chapitre ne doivent pas être modifiées à chaque fois.", p:"visitor",
+     w:"Les algorithmes sont séparés des objets, pour en ajouter sans rouvrir les classes : c'est le Visiteur."}],
+ d:`// Besoins 1 et 4 : une interface Contenu avec
+//   - duree(): Int              (Lecon, et Chapitre qui additionne)
+//   - de quoi accueillir de nouveaux traitements (ici : Sommaire et CompteLecons)
+
+// Besoin 2 : un Quiz construit étape par étape (questions, note minimale), avec resume()
+
+// Besoin 3 : une Evaluation dont passer(eleve) enchaîne accueil, épreuve, correction, envoi
+//            (EvaluationQuiz et EvaluationProjet)
+
+fun main() {
+    // val cours = Chapitre("Kotlin")
+    //     .ajouter(Lecon("Variables", 10))
+    //     .ajouter(Chapitre("Objets").ajouter(Lecon("Classes", 20)).ajouter(Lecon("Interfaces", 15)))
+    // println(cours.accepter(Sommaire()))
+    // println("Durée : " + cours.duree() + " min, " + cours.accepter(CompteLecons()) + " leçons")
+    // val quiz = Quiz.Builder("Les bases").question("val ou var ?").question("À quoi sert une interface ?").noteMinimale(12).build()
+    // println(quiz.resume())
+    // println(EvaluationQuiz(quiz).passer("Ana"))
+    // println(EvaluationProjet().passer("Bilal"))
+}`,
+ s:`// Besoin 4 : Visiteur
+interface Visiteur<R> {
+    fun lecon(l: Lecon): R
+    fun chapitre(c: Chapitre): R
+}
+
+// Besoin 1 : Composite
+interface Contenu {
+    fun duree(): Int
+    fun <R> accepter(v: Visiteur<R>): R
+}
+class Lecon(val titre: String, val minutes: Int) : Contenu {
+    override fun duree() = minutes
+    override fun <R> accepter(v: Visiteur<R>) = v.lecon(this)
+}
+class Chapitre(val titre: String) : Contenu {
+    val contenus = mutableListOf<Contenu>()
+    fun ajouter(c: Contenu) = apply { contenus += c }
+    override fun duree() = contenus.sumOf { it.duree() }
+    override fun <R> accepter(v: Visiteur<R>) = v.chapitre(this)
+}
+
+class Sommaire : Visiteur<String> {
+    override fun lecon(l: Lecon) = l.titre
+    override fun chapitre(c: Chapitre): String =
+        c.titre + " (" + c.contenus.joinToString(", ") { it.accepter(this) } + ")"
+}
+class CompteLecons : Visiteur<Int> {
+    override fun lecon(l: Lecon) = 1
+    override fun chapitre(c: Chapitre): Int = c.contenus.map { it.accepter(this) }.sum()
+}
+
+// Besoin 2 : Builder
+class Quiz private constructor(val titre: String, val questions: List<String>, val noteMinimale: Int) {
+    fun resume() = titre + " : " + questions.size + " questions, " + noteMinimale + "/20 pour valider"
+
+    class Builder(private val titre: String) {
+        private val questions = mutableListOf<String>()
+        private var note = 10
+        fun question(q: String) = apply { questions += q }
+        fun noteMinimale(n: Int) = apply { note = n }
+        fun build() = Quiz(titre, questions.toList(), note)
+    }
+}
+
+// Besoin 3 : Méthode
+abstract class Evaluation {
+    // Le squelette : l'ordre des étapes est fixé ici.
+    fun passer(eleve: String) =
+        "Accueil de " + eleve + " > " + epreuve() + " > " + correction() + " > envoi du résultat"
+
+    protected abstract fun epreuve(): String
+    protected open fun correction() = "correction automatique"
+}
+class EvaluationQuiz(private val quiz: Quiz) : Evaluation() {
+    override fun epreuve() = "quiz « " + quiz.titre + " »"
+}
+class EvaluationProjet : Evaluation() {
+    override fun epreuve() = "rendu d'un projet"
+    override fun correction() = "correction par un enseignant"
+}
+
+fun main() {
+    val cours = Chapitre("Kotlin")
+        .ajouter(Lecon("Variables", 10))
+        .ajouter(Chapitre("Objets").ajouter(Lecon("Classes", 20)).ajouter(Lecon("Interfaces", 15)))
+    println(cours.accepter(Sommaire()))
+    println("Durée : " + cours.duree() + " min, " + cours.accepter(CompteLecons()) + " leçons")
+    val quiz = Quiz.Builder("Les bases").question("val ou var ?").question("À quoi sert une interface ?").noteMinimale(12).build()
+    println(quiz.resume())
+    println(EvaluationQuiz(quiz).passer("Ana"))
+    println(EvaluationProjet().passer("Bilal"))
+}`},
+
+{id:"voyage", t:"Une agence de voyages",
+ ctx:["Une agence de voyages en ligne permet de choisir une formule, de consulter les prix et de préparer un itinéraire ville par ville.",
+      "Le responsable technique te décrit les quatre points à concevoir."],
+ b:[{t:"L'agence vend deux formules, Éco et Luxe. Chacune comprend un vol et un hôtel du même niveau. Un client ne doit jamais se retrouver avec un vol en première et un hôtel 2 étoiles : tout ce qui est créé pour une formule doit aller ensemble.", p:"abstract-factory",
+     w:"Une famille d'objets assortis, créés ensemble sans risque de mélange : c'est l'Abstract Factory."},
+    {t:"Les prix viennent d'un service distant, facturé à chaque appel. Un prix déjà demandé ne doit pas être redemandé. Le reste du code doit continuer d'utiliser le service de prix exactement comme avant.", p:"proxy",
+     w:"Un substitut de même interface, placé devant l'objet réel, qui décide de lui transmettre l'appel ou non : c'est le Proxy."},
+    {t:"Chaque modification de l'itinéraire (par exemple « ajouter une étape ») doit être enregistrée, pour que le conseiller puisse annuler la dernière modification si le client change d'avis.", p:"command",
+     w:"Une action transformée en objet, stockée dans un historique et annulable : c'est la Commande."},
+    {t:"L'écran de récapitulatif affiche les étapes une par une. Il ne doit pas savoir comment l'itinéraire les range en interne, car cette structure va changer.", p:"iterator",
+     w:"Parcourir une collection sans connaître sa représentation interne : c'est l'Itérateur."}],
+ d:`interface Vol { fun description(): String }
+interface Hotel { fun description(): String }
+
+interface ServicePrix { fun prix(destination: String): Int }
+class ServicePrixDistant : ServicePrix {
+    override fun prix(destination: String): Int {
+        println("Appel payant au service de prix pour " + destination)
+        return destination.length * 100
+    }
+}
+
+// Besoin 1 : FormuleEco et FormuleLuxe créent chacune leur vol et leur hôtel
+//            + fun presenter(f: Formule): String
+
+// Besoin 2 : un ServicePrixCache qui évite de rappeler le service distant
+
+// Besoin 3 : une action AjouterEtape annulable, et une Agence avec faire() et annulerDerniere()
+
+// Besoin 4 : un Itineraire que l'on peut parcourir avec for (ville in itineraire)
+
+fun main() {
+    // println(presenter(FormuleLuxe))
+    // val prix: ServicePrix = ServicePrixCache(ServicePrixDistant())
+    // println("Lisbonne : " + prix.prix("Lisbonne") + " €")
+    // println("Lisbonne : " + prix.prix("Lisbonne") + " €")
+    // val itineraire = Itineraire()
+    // val agence = Agence()
+    // agence.faire(AjouterEtape(itineraire, "Lisbonne"))
+    // agence.faire(AjouterEtape(itineraire, "Porto"))
+    // agence.faire(AjouterEtape(itineraire, "Madrid"))
+    // agence.annulerDerniere()
+    // for (ville in itineraire) println("Étape : " + ville)
+}`,
+ s:`interface Vol { fun description(): String }
+interface Hotel { fun description(): String }
+
+interface ServicePrix { fun prix(destination: String): Int }
+class ServicePrixDistant : ServicePrix {
+    override fun prix(destination: String): Int {
+        println("Appel payant au service de prix pour " + destination)
+        return destination.length * 100
+    }
+}
+
+// Besoin 1 : Abstract Factory
+class VolEco : Vol { override fun description() = "vol en classe éco" }
+class HotelEco : Hotel { override fun description() = "hôtel 2 étoiles" }
+class VolLuxe : Vol { override fun description() = "vol en première" }
+class HotelLuxe : Hotel { override fun description() = "palace 5 étoiles" }
+
+interface Formule {
+    fun vol(): Vol
+    fun hotel(): Hotel
+}
+object FormuleEco : Formule {
+    override fun vol(): Vol = VolEco()
+    override fun hotel(): Hotel = HotelEco()
+}
+object FormuleLuxe : Formule {
+    override fun vol(): Vol = VolLuxe()
+    override fun hotel(): Hotel = HotelLuxe()
+}
+fun presenter(f: Formule) = f.vol().description() + " et " + f.hotel().description()
+
+// Besoin 2 : Proxy
+class ServicePrixCache(private val distant: ServicePrix) : ServicePrix {
+    private val cache = mutableMapOf<String, Int>()
+    override fun prix(destination: String) = cache.getOrPut(destination) { distant.prix(destination) }
+}
+
+// Besoin 4 : Itérateur
+class Itineraire : Iterable<String> {
+    private val etapes = mutableListOf<String>()
+    fun ajouter(ville: String) { etapes += ville }
+    fun retirer(ville: String) { etapes -= ville }
+    override fun iterator(): Iterator<String> = object : Iterator<String> {
+        private var position = 0
+        override fun hasNext() = position < etapes.size
+        override fun next() = etapes[position++]
+    }
+}
+
+// Besoin 3 : Commande
+interface Commande {
+    fun executer()
+    fun annuler()
+}
+class AjouterEtape(private val itineraire: Itineraire, private val ville: String) : Commande {
+    override fun executer() { itineraire.ajouter(ville) }
+    override fun annuler() { itineraire.retirer(ville) }
+}
+class Agence {
+    private val historique = ArrayDeque<Commande>()
+    fun faire(c: Commande) { c.executer(); historique.addLast(c) }
+    fun annulerDerniere() { historique.removeLastOrNull()?.annuler() }
+}
+
+fun main() {
+    println(presenter(FormuleLuxe))
+    val prix: ServicePrix = ServicePrixCache(ServicePrixDistant())
+    println("Lisbonne : " + prix.prix("Lisbonne") + " €")
+    println("Lisbonne : " + prix.prix("Lisbonne") + " €")
+    val itineraire = Itineraire()
+    val agence = Agence()
+    agence.faire(AjouterEtape(itineraire, "Lisbonne"))
+    agence.faire(AjouterEtape(itineraire, "Porto"))
+    agence.faire(AjouterEtape(itineraire, "Madrid"))
+    agence.annulerDerniere()
+    for (ville in itineraire) println("Étape : " + ville)
+}`},
+
+{id:"banque", t:"Le logiciel d'une banque",
+ ctx:["Une banque régionale réécrit le logiciel de ses agences. Il gère l'ouverture des comptes, le calcul des intérêts, les relevés et l'accès à la salle des coffres.",
+      "Le directeur informatique a retenu quatre exigences."],
+ b:[{t:"Régulièrement, la banque invente un nouveau traitement à appliquer aux comptes : calcul des intérêts, relevé, demain un contrôle fiscal. Les classes CompteCourant et CompteEpargne sont certifiées : on ne veut plus y toucher à chaque nouveau traitement.", p:"visitor",
+     w:"Ajouter des opérations sans modifier les classes sur lesquelles elles portent : c'est le Visiteur."},
+    {t:"Tous les guichets ouvrent un compte de la même façon, mais chaque type de guichet (courant, épargne) décide lui-même de la classe de compte à créer. Le code d'ouverture ne doit nommer aucune classe de compte.", p:"factory-method",
+     w:"La création est déléguée à des sous-classes via une méthode de création : c'est la Factory."},
+    {t:"Le taux d'épargne est fixé par le siège. Il doit être le même pour tout le logiciel : pas question que deux écrans utilisent chacun leur propre copie des taux.", p:"singleton",
+     w:"Une instance unique, partagée par tout le logiciel : c'est le Singleton."},
+    {t:"Le contenu d'un coffre ne peut être consulté que par le directeur. Cette vérification doit se faire avant d'atteindre le vrai coffre, sans modifier la classe du coffre ni le code qui le consulte.", p:"proxy",
+     w:"Un substitut qui contrôle l'accès à l'objet original avant de lui transmettre la demande : c'est le Proxy."}],
+ d:`interface Coffre { fun consulter(): String }
+class CoffreReel : Coffre {
+    override fun consulter() = "Contenu du coffre : 3 lingots"
+}
+
+// Besoin 1 : CompteCourant et CompteEpargne (titulaire, solde) qui acceptent
+//            de nouveaux traitements (ici : InteretsAnnuels et Releve)
+
+// Besoin 2 : un Guichet abstrait avec ouvrir() ; GuichetCourant et GuichetEpargne créent leur compte
+
+// Besoin 3 : les Taux de la banque, uniques (epargne = 0.05)
+
+// Besoin 4 : un CoffreProtege qui ne laisse passer que le rôle "directeur"
+
+fun main() {
+    // val livret = GuichetEpargne().ouvrir("Ana", 1000.0)
+    // val courant = GuichetCourant().ouvrir("Bilal", 250.0)
+    // for (c in listOf(livret, courant))
+    //     println(c.titulaire + " : intérêts " + c.accepter(InteretsAnnuels()) + " €")
+    // println(CoffreProtege(CoffreReel(), "stagiaire").consulter())
+    // println(CoffreProtege(CoffreReel(), "directeur").consulter())
+}`,
+ s:`interface Coffre { fun consulter(): String }
+class CoffreReel : Coffre {
+    override fun consulter() = "Contenu du coffre : 3 lingots"
+}
+
+// Besoin 1 : Visiteur
+interface VisiteurCompte<R> {
+    fun courant(c: CompteCourant): R
+    fun epargne(c: CompteEpargne): R
+}
+interface Compte {
+    val titulaire: String
+    val solde: Double
+    fun <R> accepter(v: VisiteurCompte<R>): R
+}
+class CompteCourant(override val titulaire: String, override val solde: Double) : Compte {
+    override fun <R> accepter(v: VisiteurCompte<R>) = v.courant(this)
+}
+class CompteEpargne(override val titulaire: String, override val solde: Double) : Compte {
+    override fun <R> accepter(v: VisiteurCompte<R>) = v.epargne(this)
+}
+
+// Besoin 3 : Singleton
+object Taux {
+    val epargne = 0.05
+}
+
+class InteretsAnnuels : VisiteurCompte<Double> {
+    override fun courant(c: CompteCourant) = 0.0
+    override fun epargne(c: CompteEpargne) = c.solde * Taux.epargne
+}
+class Releve : VisiteurCompte<String> {
+    override fun courant(c: CompteCourant) = "compte courant de " + c.titulaire + ", " + c.solde + " €"
+    override fun epargne(c: CompteEpargne) = "livret de " + c.titulaire + ", " + c.solde + " €"
+}
+
+// Besoin 2 : Factory
+abstract class Guichet {
+    abstract fun creerCompte(titulaire: String, depot: Double): Compte   // la méthode de création
+    fun ouvrir(titulaire: String, depot: Double): Compte {
+        val compte = creerCompte(titulaire, depot)
+        println("Ouverture : " + compte.accepter(Releve()))
+        return compte
+    }
+}
+class GuichetCourant : Guichet() {
+    override fun creerCompte(titulaire: String, depot: Double): Compte = CompteCourant(titulaire, depot)
+}
+class GuichetEpargne : Guichet() {
+    override fun creerCompte(titulaire: String, depot: Double): Compte = CompteEpargne(titulaire, depot)
+}
+
+// Besoin 4 : Proxy
+class CoffreProtege(private val reel: Coffre, private val role: String) : Coffre {
+    override fun consulter() =
+        if (role == "directeur") reel.consulter() else "Accès refusé pour le rôle " + role
+}
+
+fun main() {
+    val livret = GuichetEpargne().ouvrir("Ana", 1000.0)
+    val courant = GuichetCourant().ouvrir("Bilal", 250.0)
+    for (c in listOf(livret, courant))
+        println(c.titulaire + " : intérêts " + c.accepter(InteretsAnnuels()) + " €")
+    println(CoffreProtege(CoffreReel(), "stagiaire").consulter())
+    println(CoffreProtege(CoffreReel(), "directeur").consulter())
+}`},
+
+{id:"niveaux", t:"Un éditeur de niveaux de jeu vidéo",
+ ctx:["Un studio indépendant développe un outil interne : un éditeur qui permet aux créateurs de composer les niveaux d'un jeu de plateforme, avec leurs décors et leurs ennemis.",
+      "Les créateurs de niveaux ont formulé quatre demandes."],
+ b:[{t:"Les créateurs règlent longuement un ennemi modèle, puis veulent en obtenir des copies à placer dans le niveau. Modifier une copie (lui donner plus de vie, par exemple) ne doit pas modifier le modèle.", p:"prototype",
+     w:"Créer un nouvel objet en clonant un objet existant, depuis l'objet lui-même : c'est le Prototype."},
+    {t:"Chaque monde (forêt, désert) fournit son sol et son décor. Ils doivent toujours être assortis : pas de cactus posés sur de l'herbe. Ajouter un monde ne doit pas obliger à modifier l'éditeur.", p:"abstract-factory",
+     w:"Une famille d'objets cohérents, créés par une même fabrique : c'est l'Abstract Factory."},
+    {t:"Un niveau se compose progressivement : on choisit son monde, on ajoute des ennemis un par un, puis on obtient le niveau terminé. Beaucoup de réglages sont optionnels.", p:"builder",
+     w:"Un objet complexe construit étape par étape, puis livré par build() : c'est le Builder."},
+    {t:"En cours de partie, un ennemi peut devenir enragé, empoisonné, ou les deux. Ces bonus s'ajoutent à volonté, se cumulent, et modifient sa description et ses dégâts. On ne veut pas d'une sous-classe par combinaison.", p:"decorator",
+     w:"Des comportements ajoutés dynamiquement par des enveloppes cumulables : c'est le Décorateur."}],
+ d:`interface Sol { fun nom(): String }
+interface Decor { fun nom(): String }
+
+// Besoin 1 : un Ennemi (description(), degats()) que l'on peut cloner ; Gobelin(vie, arme) fait 4 dégâts
+
+// Besoin 2 : les mondes Foret et Desert créent chacun leur sol et leur décor
+
+// Besoin 3 : un Niveau construit étape par étape (monde, ennemis), avec resume()
+
+// Besoin 4 : Enrage (dégâts x 2) et Empoisonne (dégâts + 3), cumulables sur un Ennemi
+
+fun main() {
+    // val modele = Gobelin(10, "massue")
+    // val chef = modele.cloner()
+    // chef.vie = 30
+    // val boss = Empoisonne(Enrage(chef))
+    // println(boss.description() + " : " + boss.degats() + " dégâts")
+    // val niveau = Niveau.Builder("Niveau 1").monde(Desert).ennemi(modele).ennemi(modele.cloner()).ennemi(boss).build()
+    // println(niveau.resume())
+    // println(Niveau.Builder("Niveau 2").monde(Foret).ennemi(boss.cloner()).build().resume())
+}`,
+ s:`interface Sol { fun nom(): String }
+interface Decor { fun nom(): String }
+
+// Besoin 1 : Prototype
+interface Ennemi {
+    fun description(): String
+    fun degats(): Int
+    fun cloner(): Ennemi
+}
+class Gobelin(var vie: Int, var arme: String) : Ennemi {
+    override fun description() = "Gobelin (" + vie + " PV, " + arme + ")"
+    override fun degats() = 4
+    override fun cloner(): Gobelin = Gobelin(vie, arme)
+}
+
+// Besoin 4 : Décorateur
+abstract class Bonus(protected val cible: Ennemi) : Ennemi {
+    override fun description() = cible.description()
+    override fun degats() = cible.degats()
+}
+class Enrage(e: Ennemi) : Bonus(e) {
+    override fun description() = super.description() + " enragé"
+    override fun degats() = super.degats() * 2
+    override fun cloner(): Ennemi = Enrage(cible.cloner())
+}
+class Empoisonne(e: Ennemi) : Bonus(e) {
+    override fun description() = super.description() + " empoisonné"
+    override fun degats() = super.degats() + 3
+    override fun cloner(): Ennemi = Empoisonne(cible.cloner())
+}
+
+// Besoin 2 : Abstract Factory
+class Herbe : Sol { override fun nom() = "herbe" }
+class Arbres : Decor { override fun nom() = "arbres" }
+class Sable : Sol { override fun nom() = "sable" }
+class Cactus : Decor { override fun nom() = "cactus" }
+
+interface Monde {
+    fun sol(): Sol
+    fun decor(): Decor
+}
+object Foret : Monde {
+    override fun sol(): Sol = Herbe()
+    override fun decor(): Decor = Arbres()
+}
+object Desert : Monde {
+    override fun sol(): Sol = Sable()
+    override fun decor(): Decor = Cactus()
+}
+
+// Besoin 3 : Builder
+class Niveau private constructor(val nom: String, val terrain: String, val ennemis: List<Ennemi>) {
+    fun resume() = nom + " sur " + terrain + " : " + ennemis.joinToString(", ") { it.description() }
+
+    class Builder(private val nom: String) {
+        private var terrain = "terrain vide"
+        private val ennemis = mutableListOf<Ennemi>()
+        fun monde(m: Monde) = apply { terrain = m.sol().nom() + " avec " + m.decor().nom() }
+        fun ennemi(e: Ennemi) = apply { ennemis += e }
+        fun build() = Niveau(nom, terrain, ennemis.toList())
+    }
+}
+
+fun main() {
+    val modele = Gobelin(10, "massue")
+    val chef = modele.cloner()
+    chef.vie = 30
+    val boss = Empoisonne(Enrage(chef))
+    println(boss.description() + " : " + boss.degats() + " dégâts")
+    val niveau = Niveau.Builder("Niveau 1").monde(Desert).ennemi(modele).ennemi(modele.cloner()).ennemi(boss).build()
+    println(niveau.resume())
+    println(Niveau.Builder("Niveau 2").monde(Foret).ennemi(boss.cloner()).build().resume())
 }`}
 ];
 
