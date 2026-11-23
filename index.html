@@ -84,6 +84,13 @@ a{color:var(--accent)}
 .nav{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:16px}
 .empty{color:var(--muted)}
 .note{font-size:.88rem;color:var(--muted)}
+.ccbtn{width:100%;text-align:left;display:flex;flex-direction:column;gap:2px;background:color-mix(in srgb,var(--accent) 8%,transparent);border:1.5px solid var(--accent);border-radius:12px;padding:12px 14px}
+.ccbtn .cct{font-family:var(--display);font-weight:700;font-size:1.1rem;color:var(--accent)}
+.ccbtn .ccs{font-size:.88rem;color:var(--muted)}
+.ccbtn[aria-pressed="true"]{background:var(--accent)}
+.ccbtn[aria-pressed="true"] .cct,.ccbtn[aria-pressed="true"] .ccs{color:var(--accent-ink)}
+.cours{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.cours .label{color:var(--fam)}
 /* Éditeur exécutable (Kotlin Playground) */
 .kp{display:flex;flex-direction:column;gap:8px;min-width:0}
 .kp .executable-fragment-wrapper{margin:0 0 20px;max-width:100%}
@@ -106,6 +113,7 @@ a{color:var(--accent)}
   </div>
 
   <section class="panel" aria-label="Réglages">
+    <div id="cc"></div>
     <div>
       <div class="label">Familles</div>
       <div class="row" id="fams" style="margin-top:8px"></div>
@@ -132,10 +140,10 @@ a{color:var(--accent)}
 </main>
 
 <script>
-const FAMS = {crea:"Création", struct:"Structure", comp:"Comportement"};
+const FAMS = {crea:"Création", struct:"Structurel", comp:"Comportemental"};
 const P = [
 /* ---------- CRÉATION ---------- */
-{id:"factory-method", n:"Fabrique", en:"Factory Method", f:"crea",
+{id:"factory-method", n:"Factory", en:"Factory Method", f:"crea",
  i:"Déclare une méthode de création dans une classe mère et laisse les sous-classes décider quel objet concret fabriquer.",
  p:"Ton code de logistique crée des Camion partout. Le jour où il faut gérer des Bateau, tu dois retoucher chaque endroit qui appelle Camion().",
  s:"Les appels directs au constructeur sont remplacés par une méthode fabrique. Le reste du code ne connaît que l'interface Transport.",
@@ -189,7 +197,7 @@ fun main() {
     println(d.rendre())
 }`}},
 
-{id:"abstract-factory", n:"Fabrique abstraite", en:"Abstract Factory", f:"crea",
+{id:"abstract-factory", n:"Abstract Factory", en:"Abstract Factory", f:"crea",
  i:"Crée des familles d'objets assortis sans préciser leurs classes concrètes.",
  p:"Ton interface a un thème clair et un thème sombre. Si chaque écran choisit ses composants à la main, tu finis avec un bouton clair à côté d'une case sombre.",
  s:"Une fabrique par famille. Chaque fabrique sait créer tous les produits de sa famille, donc ils vont forcément ensemble.",
@@ -218,7 +226,7 @@ object ThemeSombre : FabriqueUI {
 fun ecran(f: FabriqueUI) = f.bouton().rendu() + " + " + f.case().rendu()
 
 fun main() = println(ecran(ThemeSombre))`,
- q:[{q:"Quelle différence avec la Fabrique simple ?",o:["Elle crée plusieurs produits liés, pas un seul","Elle interdit l'héritage","Elle ne crée qu'une seule instance"],a:0,e:"La fabrique abstraite regroupe plusieurs méthodes de création pour une famille de produits cohérents."},
+ q:[{q:"Quelle différence avec la Factory ?",o:["Elle crée plusieurs produits liés, pas un seul","Elle interdit l'héritage","Elle ne crée qu'une seule instance"],a:0,e:"La fabrique abstraite regroupe plusieurs méthodes de création pour une famille de produits cohérents."},
     {q:"Que faut-il faire pour ajouter un thème « contraste élevé » ?",o:["Modifier la fonction ecran()","Ajouter une nouvelle fabrique et ses produits","Ajouter un when dans chaque produit"],a:1,e:"On ajoute une fabrique et ses produits. Le code client ne change pas."}],
  x:{t:"Un magasin vend des meubles Modernes et Victoriens. Crée les interfaces Chaise et Table (méthode style(): String), les quatre classes concrètes, puis une FabriqueMeubles avec deux implémentations. Écris une fonction salon(f) qui décrit une chaise et une table assorties.",
     d:`interface Chaise { fun style(): String }
@@ -258,7 +266,7 @@ fun salon(f: FabriqueMeubles) = f.chaise().style() + " et " + f.table().style()
 
 fun main() = println(salon(Victorien))`}},
 
-{id:"builder", n:"Monteur", en:"Builder", f:"crea",
+{id:"builder", n:"Builder", en:"Builder", f:"crea",
  i:"Construit un objet complexe étape par étape, au lieu d'un constructeur avec dix paramètres.",
  p:"Une Pizza a une pâte, des garnitures, du fromage ou non, une cuisson. Un seul constructeur devient illisible : Pizza(\"fine\", true, false, null, 3).",
  s:"Un objet Builder accumule les choix avec des méthodes nommées, puis build() fabrique l'objet final, souvent immuable.",
@@ -424,7 +432,7 @@ fun main() {
 }`}},
 
 /* ---------- STRUCTURE ---------- */
-{id:"adapter", n:"Adaptateur", en:"Adapter", f:"struct",
+{id:"adapter", n:"Adapteur", en:"Adapter", f:"struct",
  i:"Fait collaborer deux classes dont les interfaces sont incompatibles.",
  p:"Ton application attend des températures en Celsius. Le capteur que tu as acheté ne sait répondre qu'en Fahrenheit, et tu ne peux pas modifier son code.",
  s:"Une classe intermédiaire implémente l'interface attendue et traduit chaque appel vers l'objet existant.",
@@ -474,7 +482,7 @@ fun main() {
     println(p.payer(12.50))
 }`}},
 
-{id:"bridge", n:"Pont", en:"Bridge", f:"struct",
+{id:"bridge", n:"Bridge", en:"Bridge", f:"struct",
  i:"Sépare une abstraction de son implémentation pour que les deux évoluent chacune de leur côté.",
  p:"Tu as des télécommandes (simple, avancée) et des appareils (télé, radio). Avec l'héritage seul, il faut une classe par combinaison : TelecommandeAvanceeRadio, etc.",
  s:"La télécommande contient une référence vers un Appareil au lieu d'en hériter. Deux hiérarchies indépendantes, reliées par composition.",
@@ -499,7 +507,7 @@ fun main() {
     t.plusFort(); println(t.etat())
     t.muet(); println(t.etat())
 }`,
- q:[{q:"Quel problème le Pont évite-t-il ?",o:["L'explosion du nombre de sous-classes","Les fuites de mémoire","Les appels réseau répétés"],a:0,e:"Deux axes de variation gérés par héritage donnent une classe par combinaison. Le pont les sépare."},
+ q:[{q:"Quel problème le Bridge évite-t-il ?",o:["L'explosion du nombre de sous-classes","Les fuites de mémoire","Les appels réseau répétés"],a:0,e:"Deux axes de variation gérés par héritage donnent une classe par combinaison. Le pont les sépare."},
     {q:"Par quoi les deux hiérarchies sont-elles reliées ?",o:["Par héritage multiple","Par composition : l'abstraction contient une implémentation","Par un singleton"],a:1,e:"L'abstraction garde une référence vers l'implémentation et lui délègue le travail."}],
  x:{t:"Des messages (Message simple, MessageUrgent qui ajoute « URGENT : ») doivent partir par différents canaux (Email, Sms). Sépare les deux hiérarchies avec une interface Canal et une classe ouverte Message.",
     d:`interface Canal { fun transmettre(texte: String): String }
@@ -687,7 +695,7 @@ fun main() {
     Boutique().commander("clavier", 49.9).forEach(::println)
 }`}},
 
-{id:"flyweight", n:"Poids mouche", en:"Flyweight", f:"struct",
+{id:"flyweight", n:"Flyweight", en:"Flyweight", f:"struct",
  i:"Économise la mémoire en partageant entre de nombreux objets les données qu'ils ont en commun.",
  p:"Une forêt de 100 000 arbres. Chaque arbre stocke sa texture et sa couleur, alors qu'il n'existe que trois espèces.",
  s:"L'état commun (espèce, texture) vit dans quelques objets partagés. Chaque arbre ne garde que ce qui lui est propre : sa position.",
@@ -736,7 +744,7 @@ fun main() {
     println(Styles.nombre)   // 1
 }`}},
 
-{id:"proxy", n:"Procuration", en:"Proxy", f:"struct",
+{id:"proxy", n:"Proxy", en:"Proxy", f:"struct",
  i:"Place un remplaçant devant un objet pour contrôler l'accès à celui-ci.",
  p:"Charger une image haute définition prend du temps. La charger dès l'ouverture de la page, alors qu'elle ne sera peut-être jamais affichée, est du gaspillage.",
  s:"Le proxy a la même interface que l'objet réel. Il le crée seulement quand on en a besoin, ou vérifie des droits, ou garde un cache.",
@@ -1312,7 +1320,7 @@ fun main() {
     println(nav.trajet(10.0))   // 120.0
 }`}},
 
-{id:"template-method", n:"Patron de méthode", en:"Template Method", f:"comp",
+{id:"template-method", n:"Méthode", en:"Template Method", f:"comp",
  i:"Fixe le squelette d'un algorithme dans une classe mère et laisse les sous-classes en redéfinir certaines étapes.",
  p:"Tes rapports de ventes et de stocks suivent le même déroulé : en-tête, corps, pied. Seul le corps change, mais tout le code est dupliqué.",
  s:"La classe mère écrit la séquence une fois. Les sous-classes ne fournissent que les étapes qui varient.",
@@ -1339,7 +1347,7 @@ fun main() {
     println(RapportStock().generer())
 }`,
  q:[{q:"Où est écrit l'ordre des étapes ?",o:["Dans chaque sous-classe","Dans la classe mère, une seule fois","Dans le code client"],a:1,e:"La méthode patron de la classe mère appelle les étapes dans l'ordre. Les sous-classes ne le changent pas."},
-    {q:"Quelle différence avec la Stratégie ?",o:["Le patron de méthode repose sur l'héritage, la stratégie sur la composition","Aucune","La stratégie interdit les interfaces"],a:0,e:"Ici on varie des étapes par sous-classe. La stratégie remplace l'algorithme entier par un objet."}],
+    {q:"Quelle différence avec la Stratégie ?",o:["La Méthode repose sur l'héritage, la Stratégie sur la composition","Aucune","La stratégie interdit les interfaces"],a:0,e:"Ici on varie des étapes par sous-classe. La stratégie remplace l'algorithme entier par un objet."}],
  x:{t:"Préparer un thé ou un café suit les mêmes étapes : faire bouillir l'eau, infuser, verser, ajouter un supplément. Écris BoissonChaude avec la méthode preparer(), puis The et Cafe. Le supplément est facultatif (vide par défaut).",
     d:`abstract class BoissonChaude {
     // TODO : fun preparer(): List<String>
@@ -1449,6 +1457,125 @@ fun main() {
 }`}}
 ];
 
+/* ---------- programme du CC et notes tirées du cours ----------
+   CC : les 16 patterns du contrôle, dans l'ordre du cours. Les autres (« à savoir en plus ») suivent dans chaque famille.
+   COURS[id] : p = principe général, e = exemple vu en cours, r = remarque à retenir, q = question de QCM liée au cours. */
+const CC = ["singleton","builder","factory-method","abstract-factory","prototype",
+            "adapter","proxy","composite","decorator",
+            "command","iterator","observer","state","strategy","visitor","template-method"];
+const ORDER = ["singleton","builder","factory-method","abstract-factory","prototype",
+               "adapter","proxy","composite","decorator","flyweight","bridge","facade",
+               "command","iterator","observer","state","strategy","visitor","template-method","chain-of-responsibility","mediator","memento"];
+P.sort((a,b)=>ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
+const COURS = {
+"singleton":{
+ p:"Forcer l'utilisateur à toujours utiliser la même instance : au premier appel le singleton s'instancie, aux appels suivants il se renvoie lui-même.",
+ e:"Les beans de Spring et de Quarkus.",
+ r:"Il tient en une seule classe et n'a besoin d'aucune interaction avec les autres classes.",
+ q:{q:"D'après ton cours, quel exemple de singleton trouve-t-on dans Spring et Quarkus ?",o:["Les beans","Les DTO","Les exceptions"],e:"Par défaut, un bean est créé une seule fois et la même instance est partagée partout."}},
+"builder":{
+ p:"Le builder connaît les étapes de composition de l'objet et build() renvoie l'objet construit. Celui qui compose ne connaît pas les détails : c'est une inversion de contrôle.",
+ e:"L'annotation @Builder de Lombok : Test.builder().description(\"Une description\").isTest(true).build(). Et le HouseBuilder : buildWalls(), buildDoors(), puis getResult().",
+ r:"Il a le but inverse d'une Abstract Factory. Les builders peuvent eux-mêmes être instanciés via des factory.",
+ q:{q:"Par rapport à l'Abstract Factory, le Builder…",o:["a le but inverse","a exactement le même but","ne peut jamais être combiné avec une factory"],e:"Le cours le présente comme le but inverse d'une Abstract Factory, et précise que les builders peuvent être instanciés via des factory."}},
+"factory-method":{
+ p:"Créer un type d'objet avec une logique particulière : on encapsule les classes concrètes et on expose des interfaces de création.",
+ e:"Logistics avec createTransport(), redéfinie par RoadLogistics (camion) et SeaLogistics (bateau). Et les API des beans de Spring et Quarkus.",
+ r:"La Factory ne crée qu'un objet à la fois : elle est spécialisée sur un type d'objet.",
+ q:{q:"Combien d'objets une Factory crée-t-elle à la fois ?",o:["Un seul, d'un type précis","Toute une famille d'objets assortis","Aucun : elle clone un objet existant"],e:"La Factory se focalise sur un objet. Créer une famille d'objets assortis, c'est le rôle de l'Abstract Factory."}},
+"abstract-factory":{
+ p:"Généraliser la création d'objets de la même famille, en coordonnant les factory de ces objets.",
+ e:"FurnitureFactory avec une fabrique victorienne et une moderne (chaise, table basse, canapé). Et GUIFactory avec WinFactory et MacFactory (Button, Checkbox).",
+ r:"La Factory se focalise sur l'objet. L'Abstract Factory se focalise sur les constituants d'un objet, et elle ne crée que ces constituants.",
+ q:{q:"Sur quoi se focalise l'Abstract Factory, contrairement à la Factory ?",o:["Sur les constituants d'un objet, toute une famille","Sur un seul objet","Sur la copie d'un objet existant"],e:"La Factory est spécialisée sur un type d'objet ; l'Abstract Factory coordonne la création des constituants d'une même famille."}},
+"prototype":{
+ p:"Cloner un objet depuis l'objet lui-même, pour garantir une copie totalement identique.",
+ e:"La division cellulaire. Et le clonage de formes (Shape, Rectangle, Circle) qui appartiennent à une hiérarchie de classes, grâce à leur méthode clone().",
+ r:"Un Prototype peut remplacer un Mémento, à condition que l'objet à copier n'ait pas de dépendance externe (ou des liens faciles à copier).",
+ q:{q:"Qui réalise la copie dans le Prototype ?",o:["L'objet lui-même, avec sa méthode clone()","Le client, champ par champ","Une classe utilitaire qui lit ses champs privés"],e:"Le clonage part de l'objet lui-même : c'est ce qui garantit une copie identique sans connaître sa classe concrète."}},
+"adapter":{
+ p:"Faire collaborer des interfaces incompatibles, en transformant les données de la 1re interface en données compatibles avec la 2e.",
+ e:"L'architecture hexagonale : les appels aux API externes passent par un adapteur. Dans le cours, un PatientExterne dont l'âge vaut \"10 ans\" est transformé en Patient avec un âge numérique.",
+ r:"Deux implémentations possibles : par objets (interface et composition) ou par classes (héritage). Très souvent utilisé et facile à mettre en place.",
+ q:{q:"Quelles sont les deux implémentations possibles de l'Adapteur ?",o:["Par objets (composition) ou par classes (héritage)","Par singleton ou par prototype","Par annotation ou par réflexion"],e:"Il y a deux domaines possibles, donc deux implémentations : par objets, avec une interface, ou par classes, avec de l'héritage."}},
+"proxy":{
+ p:"Créer un substitut d'un objet, qui contrôle l'accès à l'objet original et peut agir avant ou après la demande originale.",
+ e:"CachedYouTubeClass, un proxy placé devant une bibliothèque YouTube tierce : si la vidéo est déjà en cache il la renvoie, sinon il la télécharge puis l'ajoute au cache.",
+ r:"Souvent utilisé. Un proxy n'est pas obligé de transmettre l'appel à l'objet original : il décide selon sa logique.",
+ q:{q:"Un proxy doit-il toujours transmettre l'appel à l'objet original ?",o:["Non, il décide selon sa logique (cache, contrôle d'accès…)","Oui, toujours","Oui, mais seulement après l'avoir cloné"],e:"Le proxy contrôle l'accès : il peut répondre lui-même (cache) ou refuser, sans appeler l'objet original."}},
+"composite":{
+ p:"Agencer les objets en arborescence et traiter l'ensemble comme des objets individuels.",
+ e:"Le système de fichiers du DM : ElementFichier, des fichiers (texte, image, exécutable) et un Répertoire dont calculerTaille() additionne la taille de ses composants. Et Graphic, Dot, CompoundGraphic.",
+ r:"L'unification se fait par une interface commune. Pratique pour les traitements itératifs. Points délicats : le choix du conteneur (list, set…) et l'assemblage des composites.",
+ q:{q:"Qu'est-ce qui permet de traiter une feuille et un composite de la même façon ?",o:["Une interface commune","Un cast vers la classe concrète","Un singleton"],e:"La feuille et le composite implémentent la même interface : le client appelle la même méthode sans savoir lequel il a en main."}},
+"decorator":{
+ p:"Ajouter dynamiquement de nouveaux comportements à des objets, en les plaçant dans des wrappers qui implémentent ces comportements.",
+ e:"Un Notifier enveloppé par un SlackDecorator, lui-même enveloppé par un SMSDecorator : l'appel send() traverse toute la cascade. Et @RestController, qui appelle tes méthodes à travers un objet gérant la sérialisation.",
+ r:"Avec de l'héritage, ce ne serait pas dynamique : le Décorateur passe par la composition, de façon transparente dans les appels. Il se distingue du Composite par l'intention : le Composite est une structure hiérarchique.",
+ q:{q:"Pourquoi le Décorateur utilise-t-il la composition plutôt que l'héritage ?",o:["Pour ajouter des comportements dynamiquement, à l'exécution","Parce que l'héritage est impossible entre deux classes","Pour garantir une seule instance"],e:"L'héritage est figé à la compilation. En enveloppant l'objet, on choisit et on empile les comportements à l'exécution."}},
+"flyweight":{
+ p:"Stocker plus d'objets dans la RAM en partageant les états d'objets similaires, au lieu de stocker ces données dans chaque objet.",
+ r:"Un patron très ciblé sur la mémoire, peu utilisé et difficile à mettre en place."},
+"bridge":{
+ p:"Séparer une classe, ou un ensemble de classes connexes, en deux structures (l'abstraction et l'implémentation) qui peuvent évoluer de manière indépendante.",
+ r:"Proche de l'Adapteur au niveau de la solution, mais pas de l'intention : le Bridge fait du découplage dès la conception, l'Adapteur est du code « glue » entre 2 interfaces incompatibles."},
+"facade":{
+ p:"Apporter une interface simplifiée à un framework, une librairie ou un ensemble de classes complexes.",
+ r:"La Façade crée une nouvelle interface pour un système complet. L'Adapteur rend utilisable une interface existante et n'utilise qu'un objet. Une façade est souvent un Singleton."},
+"command":{
+ p:"Transformer une action en un objet autonome, avec tous les détails de l'action. On peut alors paramétrer des méthodes avec des actions différentes, planifier leur exécution, les mettre en liste d'attente et annuler les actions effectuées.",
+ e:"L'éditeur de texte : CopyCommand, CutCommand, PasteCommand, UndoCommand et un historique pour le Ctrl+Z. Et le restaurant : le serveur pose la commande au comptoir sans savoir cuisiner, le cuisinier l'exécute.",
+ r:"La Commande convertit un traitement en objet (ses paramètres deviennent des attributs) pour différer son lancement. La Stratégie, elle, propose différentes manières de faire la même chose, permutables dans une même classe contexte.",
+ q:{q:"Quelle différence entre Commande et Stratégie ?",o:["La Commande transforme un traitement en objet pour le différer ou l'annuler ; la Stratégie offre plusieurs manières de faire la même chose","Aucune, ce sont deux noms du même patron","La Stratégie permet l'annulation, pas la Commande"],e:"Les deux encapsulent du comportement, mais pas dans le même but : différer et annuler pour l'une, choisir un algorithme pour l'autre."}},
+"iterator":{
+ p:"Parcourir une liste d'objets sans connaître sa représentation interne (list, set, etc.).",
+ e:"Un itérateur de profils sur un réseau social (ProfileIterator avec getNext() et hasMore()). Le parcours type : tant que hasNext() est vrai, on appelle next() et on traite l'élément.",
+ q:{q:"Que cache l'Itérateur à celui qui parcourt ?",o:["La représentation interne de la collection (list, set…)","Le type des éléments","Le nombre d'éléments déjà parcourus"],e:"Le client n'utilise que hasNext() et next() : il ne sait pas comment la collection est stockée."}},
+"observer":{
+ p:"Mettre en place un mécanisme de souscription, pour que plusieurs objets soient notifiés des changements d'état d'un objet.",
+ e:"RxJS. Dans le diagramme du cours : sujet.attacher(obs), puis setEtat() notifie chaque observateur inscrit, puis detacher(obs).",
+ r:"Très présent dans l'IHM : architecture MVC, notion de réactivité.",
+ q:{q:"Où rencontre-t-on très souvent l'Observateur ?",o:["Dans l'IHM : MVC, réactivité, RxJS","Dans le clonage d'objets","Dans le calcul de la taille d'une arborescence"],e:"La vue s'abonne au modèle et se met à jour quand il change : c'est la base du MVC et de la programmation réactive."}},
+"state":{
+ p:"Modifier le comportement d'un objet après un changement d'état, comme si l'objet changeait de classe.",
+ e:"Un Document qui passe de Brouillon à Modération puis Publié. Un lecteur audio Player avec ReadyState, PlayingState et LockedState. Une connexion Connecté, Déconnecté ou Suspendu.",
+ r:"Le contexte délègue le travail à son état courant. Un état peut lancer lui-même la transition, en appelant changeState() sur le contexte.",
+ q:{q:"Avec le patron État, l'objet se comporte…",o:["comme s'il changeait de classe","toujours de la même façon","comme une copie de lui-même"],e:"Chaque état est une classe : en changeant d'état, l'objet délègue à une autre classe, donc son comportement change."}},
+"strategy":{
+ p:"Définir une famille d'algorithmes, les placer dans des classes séparées et rendre leurs objets interchangeables.",
+ e:"Un Navigator avec une RouteStrategy (route, transports publics, à pied) : on change de stratégie en cours d'exécution avec setStrategy(), puis buildRoute(A, B) délègue à la stratégie courante.",
+ r:"Le Décorateur représente la peau de l'objet, la Stratégie ses tripes. Face à la Méthode : la Stratégie change le comportement par composition, de manière dynamique.",
+ q:{q:"« L'un représente la peau de l'objet, l'autre ses tripes. » Lequel est lequel ?",o:["Décorateur : la peau, Stratégie : les tripes","Stratégie : la peau, Décorateur : les tripes","Composite : la peau, Proxy : les tripes"],e:"Le Décorateur enveloppe l'objet de l'extérieur ; la Stratégie remplace l'algorithme à l'intérieur."}},
+"visitor":{
+ p:"Séparer les algorithmes des objets sur lesquels ils opèrent.",
+ e:"Un XMLExportVisitor appliqué à des formes (Dot, Circle, Rectangle, CompoundShape). La forme reçoit accept(v) et rappelle visitDot(this) ou visitCircle(this) : c'est le double dispatch.",
+ r:"On ajoute une fonctionnalité (par exemple l'export XML) sans modifier le code des formes. Le Visiteur peut être vu comme une Commande.",
+ q:{q:"Comment s'appelle le mécanisme accept(v) suivi de v.visit(this) ?",o:["Le double dispatch","L'inversion de contrôle","Le chargement paresseux"],e:"Premier aiguillage : la forme connaît son type concret. Second aiguillage : elle appelle la méthode du visiteur qui lui correspond."}},
+"template-method":{
+ p:"Donner un squelette d'algorithme dans une classe mère, et permettre aux classes filles de redéfinir des étapes de l'algorithme sans changer sa structure.",
+ e:"GameAI : takeTurn() enchaîne collectResources(), buildStructures(), buildUnits() et attack(). OrcsAI et MonstersAI redéfinissent certaines de ces étapes.",
+ r:"Méthode : le comportement change par hiérarchie (héritage), de manière statique. Stratégie : par composition, de manière dynamique.",
+ q:{q:"Méthode ou Stratégie : laquelle change le comportement de manière statique ?",o:["La Méthode, par hiérarchie de classes","La Stratégie, par composition","Les deux, sans différence"],e:"L'héritage est fixé à la compilation (statique). La Stratégie se remplace à l'exécution (dynamique)."}},
+"chain-of-responsibility":{
+ p:"Faire circuler une demande dans une chaîne de handlers, ordonnée et à sens unique : chaque handler traite la demande ou la transmet au handler suivant.",
+ r:"Permet de respecter un ordre et la responsabilité unique, et d'ajouter un nouveau handler sans toucher au code métier."},
+"mediator":{
+ p:"Faire communiquer un ensemble d'objets de manière forcée via un objet médiateur.",
+ r:"Le Médiateur réduit les dépendances chaotiques entre les objets en passant par un objet. L'Observateur établit des connexions dynamiques, à sens unique, entre les objets."},
+"memento":{
+ p:"Sauvegarder l'état courant d'un objet et le restaurer à un état précédent, sans dévoiler l'implémentation de l'objet.",
+ e:"Le Ctrl+Z.",
+ r:"Commande et Mémento vont ensemble pour l'annulation. Le Mémento peut être remplacé par un Prototype si et seulement si l'objet à sauvegarder ne contient pas de dépendance externe (ou des liens facilement copiables)."}
+};
+/* Ajoute la question du cours à la fin du QCM de chaque fiche (la bonne réponse est placée à une position variable). */
+P.forEach((p, i)=>{
+  const c = COURS[p.id];
+  if(!c || !c.q) return;
+  const o = c.q.o.slice(), k = i % 3;
+  o.splice(k, 0, o.shift());
+  p.q.push({q:c.q.q, o:o, a:k, e:c.q.e});
+});
+
 /* ---------- état ---------- */
 const KEY = "atelier-dp-kotlin-v1";
 const PARTS = {cours:"Cours", qcm:"QCM", exo:"Exercice"};
@@ -1544,7 +1671,18 @@ function runBtn(r, label){
 }
 
 /* ---------- réglages ---------- */
+const isCC = ()=> S.pats.length === CC.length && CC.every(id=>S.pats.includes(id)) && S.parts.length === 3;
 function renderConfig(){
+  const cc = document.getElementById("cc"); cc.textContent = "";
+  const onCC = isCC();
+  cc.append(el("button", {class:"ccbtn", "aria-pressed":String(onCC), onclick:()=>{
+      if(onCC){ S.pats = P.map(p=>p.id); }                     // second clic : retour à tous les patterns
+      else{ S.pats = P.map(p=>p.id).filter(id=>CC.includes(id)); S.parts = Object.keys(PARTS); S.cur = S.pats[0]; }
+      update();
+    }},
+    el("span", {class:"cct"}, "Entraînement CC"),
+    el("span", {class:"ccs"}, onCC ? "Activé : les " + CC.length + " patterns du contrôle, avec cours, QCM et exercice. Clique pour revenir à tous les patterns."
+                                   : "Les " + CC.length + " patterns du contrôle, avec cours, QCM et exercice.")));
   const fams = document.getElementById("fams"); fams.textContent = "";
   const all = S.pats.length === P.length;
   fams.append(el("button", {class:"tog", "aria-pressed":String(all), onclick:()=>{
@@ -1629,6 +1767,14 @@ function renderLesson(){
       el("h3", null, "Cours"),
       el("div", {class:"kv"}, el("b", null, "Le problème"), el("p", null, p.p)),
       el("div", {class:"kv"}, el("b", null, "L'idée"), el("p", null, p.s)),
+      (()=>{
+        const c = COURS[p.id];
+        if(!c) return null;
+        return el("div", {class:"cours"}, el("div", {class:"label"}, "Dans ton cours"),
+          el("div", {class:"kv"}, el("b", null, "Principe général"), el("p", null, c.p)),
+          c.e ? el("div", {class:"kv"}, el("b", null, "Exemple vu en cours"), el("p", null, c.e)) : null,
+          c.r ? el("div", {class:"kv"}, el("b", null, "À retenir"), el("p", null, c.r)) : null);
+      })(),
       el("p", {class:"tip"}, "En Kotlin : " + p.k),
       ...(()=>{
         const r = runner(p.c);
