@@ -2363,10 +2363,14 @@ function renderConfig(){
   fams.append(el("button", {class:"tog", "aria-pressed":String(all), onclick:()=>{
     S.pats = all ? [] : P.map(p=>p.id); update();
   }}, "Tous"));
+  const mine = S.pats.length === CC.length && CC.every(id=>S.pats.includes(id));   // exactement les patterns du contrôle
+  fams.append(el("button", {class:"tog", "aria-pressed":String(mine), title:"Sélectionne uniquement les patterns à connaître pour le contrôle", onclick:()=>{
+    S.pats = mine ? P.map(p=>p.id) : P.map(p=>p.id).filter(id=>CC.includes(id)); update();
+  }}, "Mes patterns du CC (" + CC.length + ")"));
   for(const f in FAMS){
     const ids = P.filter(p=>p.f===f).map(p=>p.id);
     const on = ids.every(id=>S.pats.includes(id));
-    fams.append(el("button", {class:"tog", "aria-pressed":String(on && !all), onclick:()=>{
+    fams.append(el("button", {class:"tog", "aria-pressed":String(on && !all && !mine), onclick:()=>{
       if(all) S.pats = ids;                                   // depuis « Tous » : ne garder que cette famille
       else if(on) S.pats = S.pats.filter(id=>!ids.includes(id));
       else S.pats = P.map(p=>p.id).filter(id=>S.pats.includes(id) || ids.includes(id));
